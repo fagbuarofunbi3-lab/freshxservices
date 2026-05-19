@@ -98,9 +98,13 @@ function NewOrderPage() {
           items: selected,
           delivery_method: delivery,
           delivery_fee: deliveryFee,
-          address: delivery === "pickup" ? address : undefined,
+          address: delivery === "pickup" || service === "cleaning" ? address : undefined,
           special_instructions: notes || undefined,
           promo_code: promo || undefined,
+          preferred_date: preferredDate || undefined,
+          preferred_time: preferredTime || undefined,
+          space_type: service === "cleaning" ? (cleaningSpace ?? undefined) : undefined,
+          recurring: service === "cleaning" ? recurring : undefined,
         },
       });
       await Promise.all([
