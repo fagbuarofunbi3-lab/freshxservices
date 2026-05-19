@@ -14,7 +14,260 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          profile_id: string
+          type: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          profile_id: string
+          type?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          profile_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          address: string | null
+          created_at: string
+          delivery_fee: number
+          delivery_method: string
+          discount_amount: number
+          id: string
+          items_json: Json
+          profile_id: string
+          promo_code_id: string | null
+          rating: number | null
+          service_type: string
+          special_instructions: string | null
+          status: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          delivery_fee?: number
+          delivery_method?: string
+          discount_amount?: number
+          id?: string
+          items_json?: Json
+          profile_id: string
+          promo_code_id?: string | null
+          rating?: number | null
+          service_type: string
+          special_instructions?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          delivery_fee?: number
+          delivery_method?: string
+          discount_amount?: number
+          id?: string
+          items_json?: Json
+          profile_id?: string
+          promo_code_id?: string | null
+          rating?: number | null
+          service_type?: string
+          special_instructions?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          language_preference: string
+          role: string
+          updated_at: string
+          wallet_balance: number
+          whatsapp_number: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          language_preference?: string
+          role?: string
+          updated_at?: string
+          wallet_balance?: number
+          whatsapp_number: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          language_preference?: string
+          role?: string
+          updated_at?: string
+          wallet_balance?: number
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expiry_date: string | null
+          id: string
+          is_active: boolean
+          min_order_amount: number
+          times_used: number
+          type: string
+          usage_limit: number | null
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          min_order_amount?: number
+          times_used?: number
+          type: string
+          usage_limit?: number | null
+          value: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          min_order_amount?: number
+          times_used?: number
+          type?: string
+          usage_limit?: number | null
+          value?: number
+        }
+        Relationships: []
+      }
+      service_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          profile_id: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          profile_id: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          profile_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
