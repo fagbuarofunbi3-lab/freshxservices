@@ -142,17 +142,23 @@ function DashboardPage() {
         ) : (
           <ul className="mt-4 divide-y divide-border">
             {recent.map((o) => (
-              <li key={o.id} className="flex items-center justify-between gap-3 py-3">
-                <div>
-                  <div className="text-sm font-medium">
-                    {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
-                    {o.id.slice(0, 8).toUpperCase()}
+              <li key={o.id}>
+                <Link
+                  to="/orders/$id"
+                  params={{ id: o.id }}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-muted/60"
+                >
+                  <div>
+                    <div className="text-sm font-medium">
+                      {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
+                      {o.id.slice(0, 8).toUpperCase()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(o.created_at).toLocaleString()} · {naira(o.total_amount)}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(o.created_at).toLocaleString()} · {naira(o.total_amount)}
-                  </div>
-                </div>
-                <StatusBadge status={o.status} />
+                  <StatusBadge status={o.status} />
+                </Link>
               </li>
             ))}
           </ul>
