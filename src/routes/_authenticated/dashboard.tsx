@@ -106,6 +106,15 @@ function DashboardPage() {
                 );
               })}
             </div>
+            <div className="mt-5">
+              <Link
+                to="/orders/$id"
+                params={{ id: active.id }}
+                className="text-sm text-primary hover:underline"
+              >
+                View order details →
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="mt-4 flex flex-col items-center gap-3 py-8 text-center">
