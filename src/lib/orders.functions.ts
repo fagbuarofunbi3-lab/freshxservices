@@ -303,11 +303,28 @@ export const getOrder = createServerFn({ method: "GET" })
     return serializeOrder(o);
   });
 
+export type OrderItemRow = {
+  service_item_id: string;
+  name: string;
+  unit_price: number;
+  quantity: number;
+  line_total: number;
+};
+export type OrderItemsJson = {
+  items: OrderItemRow[];
+  meta?: {
+    preferred_date?: string | null;
+    preferred_time?: string | null;
+    space_type?: string | null;
+    recurring?: string | null;
+  };
+};
+
 function serializeOrder(o: Record<string, unknown>) {
   return {
     id: o.id as string,
     service_type: o.service_type as "laundry" | "cleaning",
-    items_json: o.items_json as unknown,
+    items_json: (o.items_json ?? { items: [] }) as OrderItemsJson,
     subtotal: Number(o.subtotal ?? 0),
     delivery_fee: Number(o.delivery_fee ?? 0),
     discount_amount: Number(o.discount_amount ?? 0),

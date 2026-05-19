@@ -118,7 +118,11 @@ export const updateProfile = createServerFn({ method: "POST" })
       if (dupe.data) throw new Error("That WhatsApp number is already in use.");
     }
 
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      full_name?: string;
+      whatsapp_number?: string;
+      language_preference?: "en" | "pidgin";
+    } = {};
     if (data.full_name) patch.full_name = data.full_name;
     if (data.whatsapp_number) patch.whatsapp_number = data.whatsapp_number;
     if (data.language_preference) patch.language_preference = data.language_preference;
