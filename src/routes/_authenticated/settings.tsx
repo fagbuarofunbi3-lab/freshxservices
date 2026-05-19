@@ -16,7 +16,7 @@ function SettingsPage() {
   const [lang, setLang] = useState<"en" | "pidgin">(me?.language_preference ?? "en");
   const [loading, setLoading] = useState(false);
 
-  async function save(payload: Parameters<typeof fn>[0]["data"]) {
+  async function save(payload: { full_name?: string; whatsapp_number?: string; language_preference?: "en" | "pidgin" }) {
     setLoading(true);
     try {
       await fn({ data: payload });
