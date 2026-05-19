@@ -1,0 +1,114 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
+import { signUp } from "@/lib/auth.functions";
+import { useInvalidateMe } from "./__root";
+
+export const Route = createFileRoute("/signup")({ component: SignUpPage });
+
+function SignUpPage() {
+  const fn = useServerFn(signUp);
+  const navigate = useNavigate();
+  const invalidate = useInvalidateMe();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await fn({ data: { full_name: fullName, whatsapp_number: phone } });
+      await invalidate();
+      toast.success("Welcome to FreshX!");
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign up failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <AuthShell title="Create your FreshX account" subtitle="Just your name and WhatsApp number.">
+      <form onSubmit={onSubmit} className="space-y-4">
+        <Field label="Full name">
+          <input
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            minLength={2}
+            maxLength={80}
+            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="Emeka Johnson"
+          />
+        </Field>
+        <Field label="WhatsApp number">
+          <div className="flex items-stretch overflow-hidden rounded-md border border-input">
+            <span className="flex items-center bg-muted px-3 text-sm text-muted-foreground">+234</span>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              inputMode="numeric"
+              maxLength={14}
+              className="w-full bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="801 234 5678"
+            />
+          </div>
+        </Field>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? "Creating account…" : "Create account"}
+        </button>
+      </form>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link to="/login" className="font-medium text-primary hover:underline">
+          Log in
+        </Link>
+      </p>
+    </AuthShell>
+  );
+}
+
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[color:var(--surface)]">
+      <div className="freshx-blob" style={{ background: "var(--color-primary)", width: 400, height: 400, top: -100, left: -100 }} />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
+        <Link to="/" className="mb-8 font-display text-2xl font-bold">
+          Fresh<span className="text-primary">X</span>
+        </Link>
+        <div className="rounded-2xl border border-border bg-card p-7 shadow-xl shadow-primary/5">
+          <h1 className="font-display text-2xl">{title}</h1>
+          {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+          <div className="mt-6">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
