@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "./__root";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
