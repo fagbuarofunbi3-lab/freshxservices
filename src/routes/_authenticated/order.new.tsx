@@ -44,6 +44,12 @@ function NewOrderPage() {
   const [service, setService] = useState<"laundry" | "cleaning" | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
   const [tab, setTab] = useState<(typeof LAUNDRY_TABS)[number]["id"]>("laundry_soft");
+  const [cleaningSpace, setCleaningSpace] =
+    useState<(typeof CLEANING_SPACES)[number]["id"] | null>(null);
+  const [recurring, setRecurring] =
+    useState<(typeof RECURRING_OPTIONS)[number]["id"]>("one_off");
+  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredTime, setPreferredTime] = useState("");
   const [delivery, setDelivery] = useState<"dropoff" | "pickup">("dropoff");
   const [address, setAddress] = useState("");
   const [promo, setPromo] = useState("");
@@ -55,10 +61,10 @@ function NewOrderPage() {
 
   const visibleItems = useMemo(() => {
     if (service === "laundry") return items.filter((i) => i.category === tab);
-    if (service === "cleaning")
-      return items.filter((i) => i.category.startsWith("cleaning_"));
+    if (service === "cleaning" && cleaningSpace)
+      return items.filter((i) => i.category === cleaningSpace);
     return [];
-  }, [items, service, tab]);
+  }, [items, service, tab, cleaningSpace]);
 
   const subtotal = useMemo(
     () =>
