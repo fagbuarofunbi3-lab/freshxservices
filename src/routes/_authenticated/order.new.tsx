@@ -17,6 +17,19 @@ const LAUNDRY_TABS = [
   { id: "laundry_bedding", label: "Bedding & Home" },
 ] as const;
 
+const CLEANING_SPACES = [
+  { id: "cleaning_apartment", label: "Apartment", sub: "Self-contained to duplex" },
+  { id: "cleaning_office", label: "Office", sub: "Per-room pricing" },
+  { id: "cleaning_other", label: "Other", sub: "Shop, school, custom" },
+] as const;
+
+const RECURRING_OPTIONS = [
+  { id: "one_off", label: "One-off" },
+  { id: "weekly", label: "Weekly" },
+  { id: "biweekly", label: "Bi-weekly" },
+  { id: "monthly", label: "Monthly" },
+] as const;
+
 function NewOrderPage() {
   const { data: me } = useMe();
   const navigate = useNavigate();
