@@ -23,6 +23,8 @@ function DashboardPage() {
   const { data: orders } = useQuery({
     queryKey: ["my-orders"],
     queryFn: () => listMyOrders(),
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
   const active = orders?.find((o) => o.status !== "delivered" && o.status !== "cancelled");
   const recent = orders?.slice(0, 3) ?? [];
@@ -104,6 +106,15 @@ function DashboardPage() {
                 );
               })}
             </div>
+            <div className="mt-5">
+              <Link
+                to="/orders/$id"
+                params={{ id: active.id }}
+                className="text-sm text-primary hover:underline"
+              >
+                View order details →
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="mt-4 flex flex-col items-center gap-3 py-8 text-center">
@@ -131,17 +142,23 @@ function DashboardPage() {
         ) : (
           <ul className="mt-4 divide-y divide-border">
             {recent.map((o) => (
-              <li key={o.id} className="flex items-center justify-between gap-3 py-3">
-                <div>
-                  <div className="text-sm font-medium">
-                    {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
-                    {o.id.slice(0, 8).toUpperCase()}
+              <li key={o.id}>
+                <Link
+                  to="/orders/$id"
+                  params={{ id: o.id }}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-muted/60"
+                >
+                  <div>
+                    <div className="text-sm font-medium">
+                      {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
+                      {o.id.slice(0, 8).toUpperCase()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(o.created_at).toLocaleString()} · {naira(o.total_amount)}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(o.created_at).toLocaleString()} · {naira(o.total_amount)}
-                  </div>
-                </div>
-                <StatusBadge status={o.status} />
+                  <StatusBadge status={o.status} />
+                </Link>
               </li>
             ))}
           </ul>

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "./__root";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
@@ -67,13 +68,16 @@ function AuthedLayout() {
           <div className="text-xs text-muted-foreground">Good day 👋</div>
           <div className="font-display text-lg leading-tight">{me?.full_name ?? "Welcome"}</div>
         </div>
-        <button
-          onClick={onLogout}
-          className="rounded-md p-2 text-muted-foreground hover:bg-muted md:hidden"
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationsBell />
+          <button
+            onClick={onLogout}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-destructive md:hidden"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       <main className="px-5 pb-24 pt-6 md:ml-64 md:px-8 md:pb-10">

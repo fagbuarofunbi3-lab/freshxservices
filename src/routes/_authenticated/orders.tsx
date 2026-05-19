@@ -25,22 +25,28 @@ function OrdersPage() {
       ) : (
         <ul className="space-y-3">
           {orders.map((o) => (
-            <li key={o.id} className="rounded-2xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">
-                    {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
-                    {o.id.slice(0, 8).toUpperCase()}
+            <li key={o.id}>
+              <Link
+                to="/orders/$id"
+                params={{ id: o.id }}
+                className="block rounded-2xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">
+                      {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
+                      {o.id.slice(0, 8).toUpperCase()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(o.created_at).toLocaleString()}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(o.created_at).toLocaleString()}
+                  <div className="text-right">
+                    <div className="font-display text-lg">{naira(o.total_amount)}</div>
+                    <div className="text-xs text-muted-foreground capitalize">{o.status}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-display text-lg">{naira(o.total_amount)}</div>
-                  <div className="text-xs text-muted-foreground">{o.status}</div>
-                </div>
-              </div>
+              </Link>
             </li>
           ))}
         </ul>
