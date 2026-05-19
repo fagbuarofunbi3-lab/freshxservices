@@ -23,6 +23,8 @@ function DashboardPage() {
   const { data: orders } = useQuery({
     queryKey: ["my-orders"],
     queryFn: () => listMyOrders(),
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
   const active = orders?.find((o) => o.status !== "delivered" && o.status !== "cancelled");
   const recent = orders?.slice(0, 3) ?? [];
