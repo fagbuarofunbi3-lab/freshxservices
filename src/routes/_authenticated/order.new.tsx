@@ -171,73 +171,156 @@ function NewOrderPage() {
           </div>
         )}
 
-        <motion.div layout className="rounded-2xl border border-border bg-card">
-          <ul className="divide-y divide-border">
-            {visibleItems.map((it) => {
-              const n = qty[it.id] ?? 0;
-              return (
-                <li key={it.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                  <div>
-                    <div className="text-sm font-medium">{it.name}</div>
-                    <div className="text-xs text-muted-foreground">{naira(it.price)}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => inc(it.id, -1)}
-                      disabled={n === 0}
-                      className="rounded-md border border-border p-1.5 disabled:opacity-40"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-medium">{n}</span>
-                    <button
-                      onClick={() => inc(it.id, 1)}
-                      className="rounded-md border border-border p-1.5"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </motion.div>
-
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="font-medium">Delivery</div>
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {([
-              { id: "dropoff", label: "I'll drop off myself", sub: "No extra charge" },
-              { id: "pickup", label: "Request pickup & delivery", sub: `+${naira(deliveryItem?.price ?? 1000)}` },
-            ] as const).map((o) => (
+        {service === "cleaning" && (
+          <div className="grid gap-2 md:grid-cols-3">
+            {CLEANING_SPACES.map((s) => (
               <button
-                key={o.id}
-                onClick={() => setDelivery(o.id)}
-                className={`rounded-xl border p-4 text-left ${
-                  delivery === o.id ? "border-primary bg-primary-soft" : "border-border"
+                key={s.id}
+                onClick={() => {
+                  setCleaningSpace(s.id);
+                  setQty({});
+                }}
+                className={`rounded-xl border p-4 text-left transition ${
+                  cleaningSpace === s.id
+                    ? "border-primary bg-primary-soft"
+                    : "border-border hover:border-primary/40"
                 }`}
               >
-                <div className="text-sm font-medium">{o.label}</div>
-                <div className="text-xs text-muted-foreground">{o.sub}</div>
+                <div className="text-sm font-medium">{s.label}</div>
+                <div className="text-xs text-muted-foreground">{s.sub}</div>
               </button>
             ))}
           </div>
-          {delivery === "pickup" && (
+        )}
+
+        {(service === "laundry" || cleaningSpace) && (
+          <motion.div layout className="rounded-2xl border border-border bg-card">
+            <ul className="divide-y divide-border">
+              {visibleItems.map((it) => {
+                const n = qty[it.id] ?? 0;
+                return (
+                  <li key={it.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                    <div>
+                      <div className="text-sm font-medium">{it.name}</div>
+                      <div className="text-xs text-muted-foreground">{naira(it.price)}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => inc(it.id, -1)}
+                        disabled={n === 0}
+                        className="rounded-md border border-border p-1.5 disabled:opacity-40"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-6 text-center text-sm font-medium">{n}</span>
+                      <button
+                        onClick={() => inc(it.id, 1)}
+                        className="rounded-md border border-border p-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </motion.div>
+        )}
+
+        {service === "cleaning" && cleaningSpace && (
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="font-medium">Schedule</div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">Preferred date</span>
+                <input
+                  type="date"
+                  value={preferredDate}
+                  onChange={(e) => setPreferredDate(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="text-xs text-muted-foreground">Preferred time</span>
+                <input
+                  type="time"
+                  value={preferredTime}
+                  onChange={(e) => setPreferredTime(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+            <div className="mt-4">
+              <div className="text-xs text-muted-foreground">Frequency</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {RECURRING_OPTIONS.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => setRecurring(r.id)}
+                    className={`rounded-pill border px-3 py-1.5 text-xs font-medium ${
+                      recurring === r.id
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Pickup address"
-              className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Cleaning address"
+              className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
-          )}
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Special instructions (optional)"
-            className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            rows={2}
-          />
-        </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Special instructions (optional)"
+              className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              rows={2}
+            />
+          </div>
+        )}
+
+        {service === "laundry" && (
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="font-medium">Delivery</div>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {([
+                { id: "dropoff", label: "I'll drop off myself", sub: "No extra charge" },
+                { id: "pickup", label: "Request pickup & delivery", sub: `+${naira(deliveryItem?.price ?? 1000)}` },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setDelivery(o.id)}
+                  className={`rounded-xl border p-4 text-left ${
+                    delivery === o.id ? "border-primary bg-primary-soft" : "border-border"
+                  }`}
+                >
+                  <div className="text-sm font-medium">{o.label}</div>
+                  <div className="text-xs text-muted-foreground">{o.sub}</div>
+                </button>
+              ))}
+            </div>
+            {delivery === "pickup" && (
+              <input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Pickup address"
+                className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            )}
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Special instructions (optional)"
+              className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              rows={2}
+            />
+          </div>
+        )}
       </div>
 
       {/* Summary */}
