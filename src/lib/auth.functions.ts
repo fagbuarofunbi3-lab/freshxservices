@@ -24,21 +24,22 @@ const PasswordSchema = z
   .min(8, "Password must be at least 8 characters")
   .max(200);
 
-// Hash a password using pgcrypto bcrypt via a tiny SQL roundtrip.
 async function hashPassword(plain: string): Promise<string> {
   const { data, error } = await supabaseAdmin.rpc("crypt_password" as never, {
     plain,
   } as never);
-  if (!error && typeof data === "string") return data;
-  // Fallback: call pgcrypto directly via a single-row query
-  const { data: rows, error: e2 } = await supabaseAdmin
-    .from("profiles")
-    .select("id")
-    .limit(0);
-  // If even the trivial query fails, surface the original error
-  if (e2) throw new Error(e2.message);
-  void rows;
-  throw new Error(error?.message ?? "Failed to hash password");
+  if (error) throw new Error(error.message);
+  if (typeof data !== "string") throw new Error("Failed to hash password");
+  return data;
+}
+
+async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin.rpc("verify_password" as never, {
+    plain,
+    hash,
+  } as never);
+  if (error) throw new Error(error.message);
+  return data === true;
 }
 
 export const signUp = createServerFn({ method: "POST" })
