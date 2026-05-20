@@ -276,7 +276,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      crypt_password: { Args: { plain: string }; Returns: string }
+      verify_password: {
+        Args: { hash: string; plain: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
