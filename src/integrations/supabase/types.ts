@@ -130,6 +130,7 @@ export type Database = {
           full_name: string
           id: string
           language_preference: string
+          password_hash: string
           role: string
           updated_at: string
           wallet_balance: number
@@ -140,6 +141,7 @@ export type Database = {
           full_name: string
           id?: string
           language_preference?: string
+          password_hash: string
           role?: string
           updated_at?: string
           wallet_balance?: number
@@ -150,6 +152,7 @@ export type Database = {
           full_name?: string
           id?: string
           language_preference?: string
+          password_hash?: string
           role?: string
           updated_at?: string
           wallet_balance?: number
