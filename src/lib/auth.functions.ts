@@ -175,13 +175,3 @@ export const updateProfile = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-// Password verification using pgcrypto via a SQL function we define inline.
-async function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin.rpc("verify_password" as never, {
-    plain,
-    hash,
-  } as never);
-  if (error) throw new Error(error.message);
-  return data === true;
-}
