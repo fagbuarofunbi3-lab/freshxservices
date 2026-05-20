@@ -130,6 +130,7 @@ export type Database = {
           full_name: string
           id: string
           language_preference: string
+          password_hash: string
           role: string
           updated_at: string
           wallet_balance: number
@@ -140,6 +141,7 @@ export type Database = {
           full_name: string
           id?: string
           language_preference?: string
+          password_hash: string
           role?: string
           updated_at?: string
           wallet_balance?: number
@@ -150,6 +152,7 @@ export type Database = {
           full_name?: string
           id?: string
           language_preference?: string
+          password_hash?: string
           role?: string
           updated_at?: string
           wallet_balance?: number
@@ -273,7 +276,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      crypt_password: { Args: { plain: string }; Returns: string }
+      verify_password: {
+        Args: { hash: string; plain: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

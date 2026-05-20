@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";
@@ -18,11 +18,13 @@ function AuthedLayout() {
   const { data: me } = useMe();
   const logoutFn = useServerFn(logOut);
   const invalidate = useInvalidateMe();
+  const router = useRouter();
   const navigate = useNavigate();
 
   async function onLogout() {
     await logoutFn({});
     await invalidate();
+    await router.invalidate();
     navigate({ to: "/" });
   }
 

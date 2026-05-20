@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { signUp } from "@/lib/auth.functions";
 import { useInvalidateMe } from "./__root";
 
@@ -10,17 +11,21 @@ export const Route = createFileRoute("/signup")({ component: SignUpPage });
 function SignUpPage() {
   const fn = useServerFn(signUp);
   const navigate = useNavigate();
+  const router = useRouter();
   const invalidate = useInvalidateMe();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await fn({ data: { full_name: fullName, whatsapp_number: phone } });
+      await fn({ data: { full_name: fullName, whatsapp_number: phone, password } });
       await invalidate();
+      await router.invalidate();
       toast.success("Welcome to FreshX!");
       navigate({ to: "/dashboard" });
     } catch (err) {
@@ -31,7 +36,7 @@ function SignUpPage() {
   }
 
   return (
-    <AuthShell title="Create your FreshX account" subtitle="Just your name and WhatsApp number.">
+    <AuthShell title="Create your FreshX account" subtitle="Just your name, WhatsApp number and a password.">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Full name">
           <input
@@ -58,6 +63,10 @@ function SignUpPage() {
             />
           </div>
         </Field>
+        <Field label="Password">
+          <PasswordInput value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw((s) => !s)} />
+          <span className="mt-1 block text-xs text-muted-foreground">Use at least 8 characters.</span>
+        </Field>
         <button
           type="submit"
           disabled={loading}
@@ -75,6 +84,44 @@ function SignUpPage() {
     </AuthShell>
   );
 }
+
+export function PasswordInput({
+  value,
+  onChange,
+  show,
+  onToggle,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        minLength={8}
+        maxLength={200}
+        type={show ? "text" : "password"}
+        className="w-full rounded-md border border-input bg-background px-3 py-2.5 pr-10 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        placeholder="••••••••"
+        autoComplete="current-password"
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute inset-y-0 right-2 my-auto flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted"
+        aria-label={show ? "Hide password" : "Show password"}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+
 
 export function AuthShell({
   title,

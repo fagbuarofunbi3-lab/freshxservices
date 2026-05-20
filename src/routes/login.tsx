@@ -1,26 +1,30 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { logIn } from "@/lib/auth.functions";
 import { useInvalidateMe } from "./__root";
-import { AuthShell, Field } from "./signup";
+import { AuthShell, Field, PasswordInput } from "./signup";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
   const fn = useServerFn(logIn);
   const navigate = useNavigate();
+  const router = useRouter();
   const invalidate = useInvalidateMe();
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await fn({ data: { whatsapp_number: phone } });
+      await fn({ data: { whatsapp_number: phone, password } });
       await invalidate();
+      await router.invalidate();
       toast.success("Welcome back!");
       navigate({ to: "/dashboard" });
     } catch (err) {
@@ -31,7 +35,7 @@ function LoginPage() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in with your WhatsApp number.">
+    <AuthShell title="Welcome back" subtitle="Sign in with your WhatsApp number and password.">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="WhatsApp number">
           <div className="flex items-stretch overflow-hidden rounded-md border border-input">
@@ -46,6 +50,9 @@ function LoginPage() {
               placeholder="801 234 5678"
             />
           </div>
+        </Field>
+        <Field label="Password">
+          <PasswordInput value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw((s) => !s)} />
         </Field>
         <button
           type="submit"
