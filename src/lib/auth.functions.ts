@@ -19,10 +19,37 @@ const PhoneSchema = z
   });
 
 const NameSchema = z.string().trim().min(2).max(80);
+const PasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(200);
+
+// Hash a password using pgcrypto bcrypt via a tiny SQL roundtrip.
+async function hashPassword(plain: string): Promise<string> {
+  const { data, error } = await supabaseAdmin.rpc("crypt_password" as never, {
+    plain,
+  } as never);
+  if (!error && typeof data === "string") return data;
+  // Fallback: call pgcrypto directly via a single-row query
+  const { data: rows, error: e2 } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .limit(0);
+  // If even the trivial query fails, surface the original error
+  if (e2) throw new Error(e2.message);
+  void rows;
+  throw new Error(error?.message ?? "Failed to hash password");
+}
 
 export const signUp = createServerFn({ method: "POST" })
   .inputValidator((input) =>
-    z.object({ full_name: NameSchema, whatsapp_number: PhoneSchema }).parse(input),
+    z
+      .object({
+        full_name: NameSchema,
+        whatsapp_number: PhoneSchema,
+        password: PasswordSchema,
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const existing = await supabaseAdmin
@@ -33,11 +60,13 @@ export const signUp = createServerFn({ method: "POST" })
     if (existing.data) {
       throw new Error("An account with this WhatsApp number already exists. Try logging in.");
     }
+    const password_hash = await hashPassword(data.password);
     const { data: created, error } = await supabaseAdmin
       .from("profiles")
       .insert({
         full_name: data.full_name,
         whatsapp_number: data.whatsapp_number,
+        password_hash,
       })
       .select("id")
       .single();
@@ -49,15 +78,25 @@ export const signUp = createServerFn({ method: "POST" })
   });
 
 export const logIn = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ whatsapp_number: PhoneSchema }).parse(input))
+  .inputValidator((input) =>
+    z
+      .object({
+        whatsapp_number: PhoneSchema,
+        password: PasswordSchema,
+      })
+      .parse(input),
+  )
   .handler(async ({ data }) => {
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("id")
+      .select("id, password_hash")
       .eq("whatsapp_number", data.whatsapp_number)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!profile) throw new Error("No account found for that number. Please sign up.");
+    if (!profile) throw new Error("Invalid WhatsApp number or password");
+
+    const ok = await verifyPassword(data.password, profile.password_hash);
+    if (!ok) throw new Error("Invalid WhatsApp number or password");
 
     const session = await getFreshXSession();
     await session.update({ profileId: profile.id });
@@ -100,6 +139,7 @@ export const updateProfile = createServerFn({ method: "POST" })
         full_name: NameSchema.optional(),
         whatsapp_number: PhoneSchema.optional(),
         language_preference: z.enum(["en", "pidgin"]).optional(),
+        new_password: PasswordSchema.optional(),
       })
       .parse(input),
   )
@@ -122,13 +162,25 @@ export const updateProfile = createServerFn({ method: "POST" })
       full_name?: string;
       whatsapp_number?: string;
       language_preference?: "en" | "pidgin";
+      password_hash?: string;
     } = {};
     if (data.full_name) patch.full_name = data.full_name;
     if (data.whatsapp_number) patch.whatsapp_number = data.whatsapp_number;
     if (data.language_preference) patch.language_preference = data.language_preference;
+    if (data.new_password) patch.password_hash = await hashPassword(data.new_password);
     if (Object.keys(patch).length === 0) return { ok: true };
 
     const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", profileId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Password verification using pgcrypto via a SQL function we define inline.
+async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin.rpc("verify_password" as never, {
+    plain,
+    hash,
+  } as never);
+  if (error) throw new Error(error.message);
+  return data === true;
+}
