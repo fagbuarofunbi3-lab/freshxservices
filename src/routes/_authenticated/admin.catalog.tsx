@@ -67,7 +67,7 @@ function AdminCatalog() {
                 <td className="px-4 py-3">{i.is_active ? "Yes" : "No"}</td>
                 <td className="px-4 py-3 text-right">
                   <button
-                    onClick={() => setEditing({ ...i })}
+                    onClick={() => setEditing({ ...i, category: i.category as "laundry" | "cleaning" })}
                     className="mr-2 text-sm text-primary hover:underline"
                   >
                     Edit

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut } from "lucide-react";
+import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut, Shield } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "./__root";
 import { NotificationsBell } from "@/components/NotificationsBell";
@@ -28,13 +28,16 @@ function AuthedLayout() {
     navigate({ to: "/" });
   }
 
-  const items = [
+  const baseItems = [
     { to: "/dashboard", icon: Home, label: "Home" },
     { to: "/order/new", icon: Plus, label: "New Order" },
     { to: "/orders", icon: ShoppingBag, label: "Orders" },
     { to: "/wallet", icon: Wallet, label: "Wallet" },
     { to: "/settings", icon: Settings, label: "Settings" },
   ] as const;
+  const items = me?.role === "admin"
+    ? ([...baseItems, { to: "/admin", icon: Shield, label: "Admin" }] as const)
+    : baseItems;
 
   return (
     <div className="min-h-screen bg-[color:var(--surface)] text-foreground">
