@@ -14,7 +14,7 @@ export const SESSION_CONFIG = {
   maxAge: 60 * 60 * 24 * 60, // 60 days
   cookie: {
     httpOnly: true,
-    sameSite: "lax" as const,
+    sameSite: "none" as const,
     secure: true,
     path: "/",
   },

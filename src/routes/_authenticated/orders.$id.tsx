@@ -13,86 +13,11 @@ export const Route = createFileRoute("/_authenticated/orders/$id")({
   component: OrderDetailPage,
 });
 
-const STATUSES = ["received", "washing", "ready", "delivered"] as const;
-const STATUS_LABELS: Record<string, string> = {
-  received: "Received",
-  washing: "Washing / Cleaning",
-  ready: "Ready",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-  pending: "Pending",
-};
-
-function OrderDetailPage() {
-  const { id } = Route.useParams();
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  const invalidateMe = useInvalidateMe();
-  const create = useServerFn(createOrder);
-  const [repeating, setRepeating] = useState(false);
-
-  const { data: order, isLoading } = useQuery({
-    queryKey: ["order", id],
-    queryFn: () => getOrder({ data: { id } }),
-    refetchInterval: 15_000,
-  });
-
-  if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading…</div>;
-  }
-  if (!order) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">Order not found.</p>
-        <Link to="/orders" className="text-sm text-primary hover:underline">
-          ← Back to orders
-        </Link>
-      </div>
-    );
-  }
-
+export function OrderSummary({ order, showTracker = true }: { order: NonNullable<Awaited<ReturnType<typeof getOrder>>>; showTracker?: boolean }) {
   const stepIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
   const items = order.items_json?.items ?? [];
-
-  async function repeat() {
-    if (!order) return;
-    if (items.length === 0) return toast.error("No items to repeat");
-    setRepeating(true);
-    try {
-      const res = await create({
-        data: {
-          service_type: order.service_type,
-          items: items.map((i) => ({
-            service_item_id: i.service_item_id,
-            name: i.name,
-            unit_price: i.unit_price,
-            quantity: i.quantity,
-          })),
-          delivery_method: order.delivery_method as "dropoff" | "pickup",
-          delivery_fee: Number(order.delivery_fee),
-          address: order.address ?? undefined,
-        },
-      });
-      await Promise.all([
-        invalidateMe(),
-        qc.invalidateQueries({ queryKey: ["my-orders"] }),
-        qc.invalidateQueries({ queryKey: ["wallet-tx"] }),
-      ]);
-      toast.success(`Order placed! ${naira(res.total)} deducted.`);
-      navigate({ to: "/orders/$id", params: { id: res.order_id } });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not repeat order");
-    } finally {
-      setRepeating(false);
-    }
-  }
-
   return (
-    <div className="max-w-3xl space-y-6">
-      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> All orders
-      </Link>
-
+    <>
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -109,7 +34,7 @@ function OrderDetailPage() {
           </span>
         </div>
 
-        {order.status !== "cancelled" && (
+        {showTracker && order.status !== "cancelled" && (
           <div className="mt-6 grid grid-cols-4 gap-2">
             {STATUSES.map((s, i) => {
               const done = i <= stepIdx;
@@ -177,6 +102,90 @@ function OrderDetailPage() {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+const STATUSES = ["received", "washing", "ready", "delivered"] as const;
+const STATUS_LABELS: Record<string, string> = {
+  received: "Received",
+  washing: "Washing / Cleaning",
+  ready: "Ready",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  pending: "Pending",
+};
+
+function OrderDetailPage() {
+  const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const invalidateMe = useInvalidateMe();
+  const create = useServerFn(createOrder);
+  const [repeating, setRepeating] = useState(false);
+
+  const { data: order, isLoading } = useQuery({
+    queryKey: ["order", id],
+    queryFn: () => getOrder({ data: { id } }),
+    refetchInterval: 15_000,
+  });
+
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Loading…</div>;
+  }
+  if (!order) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">Order not found.</p>
+        <Link to="/orders" className="text-sm text-primary hover:underline">
+          ← Back to orders
+        </Link>
+      </div>
+    );
+  }
+
+  const items = order.items_json?.items ?? [];
+
+  async function repeat() {
+    if (!order) return;
+    if (items.length === 0) return toast.error("No items to repeat");
+    setRepeating(true);
+    try {
+      const res = await create({
+        data: {
+          service_type: order.service_type,
+          items: items.map((i) => ({
+            service_item_id: i.service_item_id,
+            name: i.name,
+            unit_price: i.unit_price,
+            quantity: i.quantity,
+          })),
+          delivery_method: order.delivery_method as "dropoff" | "pickup",
+          delivery_fee: Number(order.delivery_fee),
+          address: order.address ?? undefined,
+        },
+      });
+      await Promise.all([
+        invalidateMe(),
+        qc.invalidateQueries({ queryKey: ["my-orders"] }),
+        qc.invalidateQueries({ queryKey: ["wallet-tx"] }),
+      ]);
+      toast.success(`Order placed! ${naira(res.total)} deducted.`);
+      navigate({ to: "/orders/$id", params: { id: res.order_id } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not repeat order");
+    } finally {
+      setRepeating(false);
+    }
+  }
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> All orders
+      </Link>
+
+      <OrderSummary order={order} />
 
       <button
         onClick={repeat}

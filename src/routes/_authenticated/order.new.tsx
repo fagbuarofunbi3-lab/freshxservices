@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Minus, Plus } from "lucide-react";
-import { createOrder, listServiceItems } from "@/lib/orders.functions";
+import { applyPromo, createOrder, listServiceItems } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
@@ -36,6 +36,7 @@ function NewOrderPage() {
   const qc = useQueryClient();
   const invalidateMe = useInvalidateMe();
   const create = useServerFn(createOrder);
+  const applyPromoFn = useServerFn(applyPromo);
   const { data: items = [] } = useQuery({
     queryKey: ["service-items"],
     queryFn: () => listServiceItems(),
@@ -53,8 +54,10 @@ function NewOrderPage() {
   const [delivery, setDelivery] = useState<"dropoff" | "pickup">("dropoff");
   const [address, setAddress] = useState("");
   const [promo, setPromo] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [applyingPromo, setApplyingPromo] = useState(false);
 
   const deliveryItem = items.find((i) => i.category === "delivery");
   const deliveryFee = delivery === "pickup" ? (deliveryItem?.price ?? 1000) : 0;
@@ -75,10 +78,30 @@ function NewOrderPage() {
     [qty, items],
   );
 
-  const total = subtotal + deliveryFee;
+  const discount = appliedPromo?.discount ?? 0;
+  const total = Math.max(0, subtotal + deliveryFee - discount);
 
   function inc(id: string, by: number) {
     setQty((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + by) }));
+  }
+
+  async function applyCode() {
+    if (!promo.trim()) return toast.error("Enter a promo code");
+    if (subtotal <= 0) return toast.error("Add items before applying a promo");
+    setApplyingPromo(true);
+    try {
+      const res = await applyPromoFn({ data: { code: promo, subtotal } });
+      if (!res.ok) {
+        setAppliedPromo(null);
+        return toast.error(res.message);
+      }
+      setAppliedPromo({ code: res.code, discount: res.discount });
+      toast.success(`${res.code} applied — ${naira(res.discount)} off`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not apply promo");
+    } finally {
+      setApplyingPromo(false);
+    }
   }
 
   async function confirm() {
@@ -113,7 +136,7 @@ function NewOrderPage() {
         qc.invalidateQueries({ queryKey: ["wallet-tx"] }),
       ]);
       toast.success(`Order placed! ${naira(res.total)} deducted.`);
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/order/confirmed/$id", params: { id: res.order_id } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not place order");
     } finally {
@@ -330,17 +353,31 @@ function NewOrderPage() {
           <dl className="mt-4 space-y-2 text-sm">
             <Row label="Subtotal" value={naira(subtotal)} />
             <Row label="Delivery" value={naira(deliveryFee)} />
+            {discount > 0 && <Row label={`Promo (${appliedPromo?.code})`} value={`−${naira(discount)}`} />}
             <div className="border-t border-border pt-2">
               <Row label="Total" value={naira(total)} bold />
             </div>
           </dl>
           <div className="mt-4">
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value.toUpperCase())}
-              placeholder="Promo code (try FRESH10)"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
+            <div className="flex gap-2">
+              <input
+                value={promo}
+                onChange={(e) => {
+                  setPromo(e.target.value.toUpperCase());
+                  setAppliedPromo(null);
+                }}
+                placeholder="Promo code (try FRESH10)"
+                className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={applyCode}
+                disabled={applyingPromo || subtotal === 0}
+                className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+              >
+                {applyingPromo ? "Checking…" : "Apply"}
+              </button>
+            </div>
           </div>
           <div className="mt-4 text-xs text-muted-foreground">
             Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
