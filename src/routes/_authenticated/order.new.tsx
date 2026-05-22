@@ -353,17 +353,31 @@ function NewOrderPage() {
           <dl className="mt-4 space-y-2 text-sm">
             <Row label="Subtotal" value={naira(subtotal)} />
             <Row label="Delivery" value={naira(deliveryFee)} />
+            {discount > 0 && <Row label={`Promo (${appliedPromo?.code})`} value={`−${naira(discount)}`} />}
             <div className="border-t border-border pt-2">
               <Row label="Total" value={naira(total)} bold />
             </div>
           </dl>
           <div className="mt-4">
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value.toUpperCase())}
-              placeholder="Promo code (try FRESH10)"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
+            <div className="flex gap-2">
+              <input
+                value={promo}
+                onChange={(e) => {
+                  setPromo(e.target.value.toUpperCase());
+                  setAppliedPromo(null);
+                }}
+                placeholder="Promo code (try FRESH10)"
+                className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={applyCode}
+                disabled={applyingPromo || subtotal === 0}
+                className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+              >
+                {applyingPromo ? "Checking…" : "Apply"}
+              </button>
+            </div>
           </div>
           <div className="mt-4 text-xs text-muted-foreground">
             Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
