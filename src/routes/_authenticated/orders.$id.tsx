@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/orders/$id")({
 });
 
 export function OrderSummary({ order, showTracker = true }: { order: NonNullable<Awaited<ReturnType<typeof getOrder>>>; showTracker?: boolean }) {
+  const stepIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
   const items = order.items_json?.items ?? [];
   return (
     <>
@@ -143,7 +144,6 @@ function OrderDetailPage() {
     );
   }
 
-  const stepIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
   const items = order.items_json?.items ?? [];
 
   async function repeat() {
