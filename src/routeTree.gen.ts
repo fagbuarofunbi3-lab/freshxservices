@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdminPromosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin.orders'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin.catalog'
+import { Route as AuthenticatedOrderConfirmedIdRouteImport } from './routes/_authenticated/order.confirmed.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -109,6 +110,12 @@ const AuthenticatedAdminCatalogRoute =
     path: '/catalog',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedOrderConfirmedIdRoute =
+  AuthenticatedOrderConfirmedIdRouteImport.update({
+    id: '/order/confirmed/$id',
+    path: '/order/confirmed/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/_authenticated/order/new': typeof AuthenticatedOrderNewRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/order/new'
     | '/orders/$id'
     | '/admin/'
+    | '/order/confirmed/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/order/new'
     | '/orders/$id'
     | '/admin'
+    | '/order/confirmed/$id'
   id:
     | '__root__'
     | '/'
@@ -214,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authenticated/order/new'
     | '/_authenticated/orders/$id'
     | '/_authenticated/admin/'
+    | '/_authenticated/order/confirmed/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCatalogRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/order/confirmed/$id': {
+      id: '/_authenticated/order/confirmed/$id'
+      path: '/order/confirmed/$id'
+      fullPath: '/order/confirmed/$id'
+      preLoaderRoute: typeof AuthenticatedOrderConfirmedIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -377,6 +397,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedOrderNewRoute: typeof AuthenticatedOrderNewRoute
+  AuthenticatedOrderConfirmedIdRoute: typeof AuthenticatedOrderConfirmedIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -386,6 +407,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedOrderNewRoute: AuthenticatedOrderNewRoute,
+  AuthenticatedOrderConfirmedIdRoute: AuthenticatedOrderConfirmedIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
