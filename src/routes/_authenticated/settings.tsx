@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { updateProfile } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "../__root";
+import { PasswordInput } from "../signup";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
@@ -14,13 +15,16 @@ function SettingsPage() {
   const [name, setName] = useState(me?.full_name ?? "");
   const [phone, setPhone] = useState(me?.whatsapp_number ?? "");
   const [lang, setLang] = useState<"en" | "pidgin">(me?.language_preference ?? "en");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function save(payload: { full_name?: string; whatsapp_number?: string; language_preference?: "en" | "pidgin" }) {
+  async function save(payload: { full_name?: string; whatsapp_number?: string; language_preference?: "en" | "pidgin"; new_password?: string }) {
     setLoading(true);
     try {
       await fn({ data: payload });
       await invalidate();
+      if (payload.new_password) setPassword("");
       toast.success("Saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save");
