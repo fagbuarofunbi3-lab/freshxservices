@@ -8,6 +8,10 @@ import { AuthShell, Field, PasswordInput } from "./signup";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
+function waitForSessionReady() {
+  return new Promise((resolve) => setTimeout(resolve, 120));
+}
+
 function LoginPage() {
   const fn = useServerFn(logIn);
   const navigate = useNavigate();
@@ -23,10 +27,11 @@ function LoginPage() {
     setLoading(true);
     try {
       await fn({ data: { whatsapp_number: phone, password } });
+      await waitForSessionReady();
       await invalidate();
       await router.invalidate();
       toast.success("Welcome back!");
-      navigate({ to: "/dashboard" });
+      await navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {

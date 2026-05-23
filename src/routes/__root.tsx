@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
+  useRouter,
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
@@ -91,15 +92,31 @@ function NotFound() {
   );
 }
 
-function ErrorView({ error }: { error: Error }) {
+function ErrorView({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+
+  async function tryAgain() {
+    await router.invalidate();
+    reset();
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="font-display text-3xl">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <a href="/" className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-primary-foreground">
-          Go home
-        </a>
+        <h1 className="font-display text-3xl">FreshX is getting your dashboard ready</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {error.message === "Not signed in"
+            ? "Your session is being refreshed. Try again or sign in once more."
+            : "Please try again. If it continues, sign in again and FreshX will take you to your dashboard."}
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button onClick={tryAgain} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">
+            Try again
+          </button>
+          <Link to="/login" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
+            Sign in
+          </Link>
+        </div>
       </div>
     </div>
   );
