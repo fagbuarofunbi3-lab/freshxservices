@@ -8,6 +8,10 @@ import { useInvalidateMe } from "./__root";
 
 export const Route = createFileRoute("/signup")({ component: SignUpPage });
 
+function waitForSessionReady() {
+  return new Promise((resolve) => setTimeout(resolve, 120));
+}
+
 function SignUpPage() {
   const fn = useServerFn(signUp);
   const navigate = useNavigate();
@@ -24,10 +28,11 @@ function SignUpPage() {
     setLoading(true);
     try {
       await fn({ data: { full_name: fullName, whatsapp_number: phone, password } });
+      await waitForSessionReady();
       await invalidate();
       await router.invalidate();
       toast.success("Welcome to FreshX!");
-      navigate({ to: "/dashboard" });
+      await navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign up failed");
     } finally {
