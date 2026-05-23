@@ -18,11 +18,11 @@ export function renderErrorPage(): string {
   </head>
   <body>
     <div class="card">
-      <h1>This page didn't load</h1>
-      <p>Something went wrong on our end. You can try refreshing or head back home.</p>
+      <h1>FreshX is refreshing your session</h1>
+      <p>Please try again. If your session expired, sign in again and FreshX will take you to your dashboard.</p>
       <div class="actions">
         <button class="primary" onclick="location.reload()">Try again</button>
-        <a class="secondary" href="/">Go home</a>
+        <a class="secondary" href="/login">Sign in</a>
       </div>
     </div>
   </body>
