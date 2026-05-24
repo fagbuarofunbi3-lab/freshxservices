@@ -101,8 +101,8 @@ function AuthedLayout() {
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="grid grid-cols-5">
-          {baseItems.map((it) => (
+        <div className={`grid ${items.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
+          {items.map((it) => (
             <Link
               key={it.to}
               to={it.to}
