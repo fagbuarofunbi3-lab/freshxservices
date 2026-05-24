@@ -38,10 +38,14 @@ function AdminCatalog() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="font-display text-2xl">Prices & categories</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Add, edit, deactivate or delete laundry and cleaning service items.</p>
+        </div>
         <button
           onClick={() => setEditing({ category: "laundry", name: "", price: 0, is_active: true })}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+          className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:w-auto"
         >
           + New item
         </button>
