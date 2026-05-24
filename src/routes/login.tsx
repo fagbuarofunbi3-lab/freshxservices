@@ -26,7 +26,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await fn({ data: { whatsapp_number: phone, password } });
+      const result = await fn({ data: { whatsapp_number: phone, password } });
       await waitForSessionReady();
       await invalidate();
       await router.invalidate();
