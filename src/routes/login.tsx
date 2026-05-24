@@ -31,7 +31,7 @@ function LoginPage() {
       await invalidate();
       await router.invalidate();
       toast.success("Welcome back!");
-      await navigate({ to: "/dashboard", replace: true });
+      await navigate({ to: result.role === "admin" ? "/admin" : "/dashboard", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
