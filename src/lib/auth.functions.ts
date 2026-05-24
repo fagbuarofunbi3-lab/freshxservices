@@ -90,7 +90,7 @@ export const logIn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, password_hash")
+      .select("id, password_hash, role")
       .eq("whatsapp_number", data.whatsapp_number)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -101,7 +101,7 @@ export const logIn = createServerFn({ method: "POST" })
 
     const session = await getFreshXSession();
     await session.update({ profileId: profile.id });
-    return { ok: true };
+    return { ok: true, role: profile.role as "customer" | "admin" };
   });
 
 export const logOut = createServerFn({ method: "POST" }).handler(async () => {

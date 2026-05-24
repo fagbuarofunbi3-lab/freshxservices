@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Shield } from "lucide-react";
 import { listMyOrders } from "@/lib/orders.functions";
 import { useMe } from "../__root";
 import { naira } from "@/lib/format";
@@ -65,6 +65,33 @@ function DashboardPage() {
           <AlertTriangle className="h-5 w-5 shrink-0 text-warning" />
           <div>Your balance is low. Top up to keep placing orders.</div>
         </div>
+      )}
+
+      {me?.role === "admin" && (
+        <section className="rounded-2xl border border-primary/30 bg-primary-soft p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Shield className="h-4 w-4" /> Admin dashboard
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">Manage orders, customers, promos, prices and service categories.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/admin"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Open Admin
+              </Link>
+              <Link
+                to="/admin/catalog"
+                className="rounded-md border border-primary/30 bg-background px-4 py-2 text-sm font-medium text-primary hover:bg-muted"
+              >
+                Edit Prices
+              </Link>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Active order tracker */}

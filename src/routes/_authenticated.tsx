@@ -89,10 +89,20 @@ function AuthedLayout() {
         <Outlet />
       </main>
 
+      {me?.role === "admin" && (
+        <Link
+          to="/admin"
+          className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
+          aria-label="Open admin dashboard"
+        >
+          <Shield className="h-5 w-5" />
+        </Link>
+      )}
+
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="grid grid-cols-5">
-          {baseItems.map((it) => (
+        <div className={`grid ${items.length === 6 ? "grid-cols-6" : "grid-cols-5"}`}>
+          {items.map((it) => (
             <Link
               key={it.to}
               to={it.to}
