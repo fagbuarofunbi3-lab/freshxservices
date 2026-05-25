@@ -11,8 +11,6 @@ import { naira } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/catalog")({ component: AdminCatalog });
 
-type Row = { id?: string; category: "laundry" | "cleaning"; name: string; price: number; is_active: boolean };
-
 const CATEGORY_OPTIONS = [
   { value: "laundry_soft", label: "Laundry · Soft Clothes" },
   { value: "laundry_hard", label: "Laundry · Hard Clothes" },
