@@ -3,6 +3,16 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getFreshXSession } from "@/lib/session.server";
 
+const ServiceItemCategorySchema = z.enum([
+  "laundry_soft",
+  "laundry_hard",
+  "laundry_bedding",
+  "cleaning_apartment",
+  "cleaning_office",
+  "cleaning_other",
+  "delivery",
+]);
+
 async function requireAdmin(): Promise<string> {
   const session = await getFreshXSession();
   const id = session.data?.profileId;
@@ -111,7 +121,7 @@ export const adminUpsertServiceItem = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid().optional(),
-        category: z.enum(["laundry", "cleaning"]),
+        category: ServiceItemCategorySchema,
         name: z.string().trim().min(1).max(120),
         price: z.number().min(0).max(10_000_000),
         is_active: z.boolean().default(true),
