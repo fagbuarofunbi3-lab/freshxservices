@@ -23,10 +23,19 @@ const CATEGORY_OPTIONS = [
 
 type CategoryValue = (typeof CATEGORY_OPTIONS)[number]["value"];
 
-type Row = { id?: string; category: CategoryValue; name: string; price: number; is_active: boolean };
+type Row = {
+  id?: string;
+  category: CategoryValue;
+  name: string;
+  price: number;
+  is_active: boolean;
+};
 
 function formatCategory(category: CategoryValue | string) {
-  return CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? category.replaceAll("_", " ");
+  return (
+    CATEGORY_OPTIONS.find((option) => option.value === category)?.label ??
+    category.replaceAll("_", " ")
+  );
 }
 
 const emptyRow: Row = { category: "laundry_soft", name: "", price: 0, is_active: true };
@@ -129,7 +138,12 @@ function EditableServiceItem({
 
 function AdminCatalog() {
   const qc = useQueryClient();
-  const { data: items, isLoading, isError, error } = useQuery({ queryKey: ["admin-catalog"], queryFn: () => adminListServiceItems() });
+  const {
+    data: items,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({ queryKey: ["admin-catalog"], queryFn: () => adminListServiceItems() });
   const [newItem, setNewItem] = useState<Row>(emptyRow);
 
   const save = useMutation({
@@ -154,29 +168,51 @@ function AdminCatalog() {
     <div className="space-y-5">
       <div className="space-y-1">
         <h2 className="font-display text-2xl">Edit prices & categories</h2>
-        <p className="text-sm text-muted-foreground">Change the category, name, price and visibility directly on this page.</p>
+        <p className="text-sm text-muted-foreground">
+          Change the category, name, price and visibility directly on this page.
+        </p>
       </div>
 
       <section className="space-y-3">
         <div>
           <h3 className="text-sm font-semibold uppercase text-muted-foreground">Add a new price</h3>
         </div>
-        <EditableServiceItem row={newItem} onSave={(row) => save.mutate(row)} saving={save.isPending && !save.variables?.id} />
+        <EditableServiceItem
+          row={newItem}
+          onSave={(row) => save.mutate(row)}
+          saving={save.isPending && !save.variables?.id}
+        />
       </section>
 
       <section className="space-y-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase text-muted-foreground">Current prices</h3>
-            <p className="text-xs text-muted-foreground">Each service below is editable immediately. Press “Save changes” after any change.</p>
+            <h3 className="text-sm font-semibold uppercase text-muted-foreground">
+              Current prices
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Each service below is editable immediately. Press “Save changes” after any change.
+            </p>
           </div>
-          {items?.length ? <span className="text-sm text-muted-foreground">{items.length} items</span> : null}
+          {items?.length ? (
+            <span className="text-sm text-muted-foreground">{items.length} items</span>
+          ) : null}
         </div>
 
-        {isLoading && <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Loading prices...</div>}
-        {isError && <div className="rounded-lg border border-destructive/40 bg-card p-4 text-sm text-destructive">{error.message}</div>}
+        {isLoading && (
+          <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+            Loading prices...
+          </div>
+        )}
+        {isError && (
+          <div className="rounded-lg border border-destructive/40 bg-card p-4 text-sm text-destructive">
+            {error.message}
+          </div>
+        )}
         {!isLoading && !isError && !items?.length && (
-          <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No prices have been added yet.</div>
+          <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+            No prices have been added yet.
+          </div>
         )}
         <div className="space-y-3">
           {(items ?? []).map((item) => (
