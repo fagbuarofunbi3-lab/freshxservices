@@ -7,7 +7,6 @@ import {
   adminListServiceItems,
   adminUpsertServiceItem,
 } from "@/lib/admin.functions";
-import { naira } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/catalog")({ component: AdminCatalog });
 
@@ -30,13 +29,6 @@ type Row = {
   price: number;
   is_active: boolean;
 };
-
-function formatCategory(category: CategoryValue | string) {
-  return (
-    CATEGORY_OPTIONS.find((option) => option.value === category)?.label ??
-    category.replaceAll("_", " ")
-  );
-}
 
 const emptyRow: Row = { category: "laundry_soft", name: "", price: 0, is_active: true };
 
@@ -144,13 +136,13 @@ function AdminCatalog() {
     isError,
     error,
   } = useQuery({ queryKey: ["admin-catalog"], queryFn: () => adminListServiceItems() });
-  const [newItem, setNewItem] = useState<Row>(emptyRow);
+  const [newItem, setNewItem] = useState<Row>(() => ({ ...emptyRow }));
 
   const save = useMutation({
     mutationFn: (row: Row) => adminUpsertServiceItem({ data: row }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-catalog"] });
-      setNewItem(emptyRow);
+      setNewItem({ ...emptyRow });
       toast.success("Saved");
     },
     onError: (e: Error) => toast.error(e.message),
