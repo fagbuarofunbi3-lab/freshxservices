@@ -18,16 +18,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "FreshX Services — Laundry & Cleaning. Done Fresh." },
+      { title: "FreshX Services" },
       {
         name: "description",
         content:
           "Premium laundry and cleaning in Nigeria. Drop your clothes, book a clean — FreshX handles the rest.",
       },
       { property: "og:title", content: "FreshX Services" },
-      { property: "og:description", content: "Laundry & Cleaning. Done Fresh." },
+      { property: "og:description", content: "Nigeria's No 1 Laundry and Cleaning Services for Nigerian Students" },
       { property: "og:type", content: "website" },
       { name: "theme-color", content: "#1A56DB" },
+      { name: "twitter:title", content: "FreshX Services" },
+      { name: "description", content: "Nigeria's No 1 Laundry and Cleaning Services for Nigerian Students" },
+      { name: "twitter:description", content: "Nigeria's No 1 Laundry and Cleaning Services for Nigerian Students" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ded10f9b-73da-4496-9018-d69e75836647/id-preview-5b5ae2d8--62f7f722-642e-4bac-888b-a463493907b4.lovable.app-1779945321270.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ded10f9b-73da-4496-9018-d69e75836647/id-preview-5b5ae2d8--62f7f722-642e-4bac-888b-a463493907b4.lovable.app-1779945321270.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
