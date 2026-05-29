@@ -106,22 +106,32 @@ function ErrorView({ error, reset }: { error: Error; reset: () => void }) {
     reset();
   }
 
+  const isAuthError = error.message === "Not signed in";
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="font-display text-3xl">FreshX is getting your dashboard ready</h1>
+        <h1 className="font-display text-3xl">Something went wrong</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {error.message === "Not signed in"
-            ? "Your session is being refreshed. Try again or sign in once more."
-            : "Please try again. If it continues, sign in again and FreshX will take you to your dashboard."}
+          {isAuthError
+            ? "Your session expired. Sign in again to continue."
+            : "We hit a snag loading this page. Try again, or head back to the homepage."}
         </p>
+        {!isAuthError && error.message ? (
+          <p className="mt-2 text-xs text-muted-foreground/70">{error.message}</p>
+        ) : null}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button onClick={tryAgain} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">
             Try again
           </button>
-          <Link to="/login" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
-            Sign in
+          <Link to="/" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
+            Go to homepage
           </Link>
+          {isAuthError ? (
+            <Link to="/login" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
+              Sign in
+            </Link>
+          ) : null}
         </div>
       </div>
     </div>
