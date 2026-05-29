@@ -18,22 +18,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "FreshX Services" },
+      { title: "FreshX Services — Laundry & Cleaning. Done Fresh." },
       {
         name: "description",
         content:
           "Premium laundry and cleaning in Nigeria. Drop your clothes, book a clean — FreshX handles the rest.",
       },
       { property: "og:title", content: "FreshX Services" },
-      { property: "og:description", content: "Nigeria's No 1 Laundry and Cleaning Services for Nigerian Students" },
+      { property: "og:description", content: "Laundry & Cleaning. Done Fresh." },
       { property: "og:type", content: "website" },
       { name: "theme-color", content: "#1A56DB" },
-      { name: "twitter:title", content: "FreshX Services" },
-      { name: "description", content: "Nigeria's No 1 Laundry and Cleaning Services for Nigerian Students" },
-      { name: "twitter:description", content: "Nigeria's No 1 Laundry and Cleaning Services for Nigerian Students" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ded10f9b-73da-4496-9018-d69e75836647/id-preview-5b5ae2d8--62f7f722-642e-4bac-888b-a463493907b4.lovable.app-1779945321270.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ded10f9b-73da-4496-9018-d69e75836647/id-preview-5b5ae2d8--62f7f722-642e-4bac-888b-a463493907b4.lovable.app-1779945321270.png" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -106,32 +100,22 @@ function ErrorView({ error, reset }: { error: Error; reset: () => void }) {
     reset();
   }
 
-  const isAuthError = error.message === "Not signed in";
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="font-display text-3xl">Something went wrong</h1>
+        <h1 className="font-display text-3xl">FreshX is getting your dashboard ready</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {isAuthError
-            ? "Your session expired. Sign in again to continue."
-            : "We hit a snag loading this page. Try again, or head back to the homepage."}
+          {error.message === "Not signed in"
+            ? "Your session is being refreshed. Try again or sign in once more."
+            : "Please try again. If it continues, sign in again and FreshX will take you to your dashboard."}
         </p>
-        {!isAuthError && error.message ? (
-          <p className="mt-2 text-xs text-muted-foreground/70">{error.message}</p>
-        ) : null}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button onClick={tryAgain} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">
             Try again
           </button>
-          <Link to="/" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
-            Go to homepage
+          <Link to="/login" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
+            Sign in
           </Link>
-          {isAuthError ? (
-            <Link to="/login" className="rounded-md border border-border bg-card px-4 py-2 text-foreground">
-              Sign in
-            </Link>
-          ) : null}
         </div>
       </div>
     </div>
