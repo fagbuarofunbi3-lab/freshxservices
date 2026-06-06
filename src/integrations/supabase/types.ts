@@ -132,6 +132,7 @@ export type Database = {
           language_preference: string
           password_hash: string
           role: string
+          transaction_pin_hash: string | null
           updated_at: string
           wallet_balance: number
           whatsapp_number: string
@@ -143,6 +144,7 @@ export type Database = {
           language_preference?: string
           password_hash: string
           role?: string
+          transaction_pin_hash?: string | null
           updated_at?: string
           wallet_balance?: number
           whatsapp_number: string
@@ -154,6 +156,7 @@ export type Database = {
           language_preference?: string
           password_hash?: string
           role?: string
+          transaction_pin_hash?: string | null
           updated_at?: string
           wallet_balance?: number
           whatsapp_number?: string
