@@ -116,6 +116,39 @@ function NewOrderPage() {
         return { service_item_id: id, name: it.name, unit_price: it.price, quantity: n };
       });
     if (selected.length === 0) return toast.error("Add at least one item");
+
+    // CLEANING → WhatsApp handoff, no wallet charge
+    if (service === "cleaning") {
+      const lines: string[] = [];
+      lines.push(`Hello, my name is ${me?.full_name ?? "a FreshX customer"}.`);
+      lines.push(`I'd like to book a cleaning service.`);
+      lines.push(``);
+      lines.push(`Items I want cleaned:`);
+      selected.forEach((s) => {
+        lines.push(`• ${s.name} × ${s.quantity} — ₦${(s.unit_price * s.quantity).toLocaleString()}`);
+      });
+      lines.push(``);
+      lines.push(`Estimated total (from website): ₦${subtotal.toLocaleString()}`);
+      if (cleaningSpace) lines.push(`Space type: ${cleaningSpace.replace("cleaning_", "")}`);
+      if (recurring) lines.push(`Frequency: ${recurring}`);
+      if (preferredDate) lines.push(`Preferred date: ${preferredDate}`);
+      if (preferredTime) lines.push(`Preferred time: ${preferredTime}`);
+      if (address) lines.push(`Address: ${address}`);
+      if (notes) lines.push(`Notes: ${notes}`);
+      lines.push(``);
+      lines.push(`(I understand the final price may differ based on location, room size or other factors.)`);
+      const url = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+      window.open(url, "_blank");
+      return;
+    }
+
+    // LAUNDRY → wallet + PIN
+    if (!me?.has_transaction_pin) {
+      return toast.error("Set up your 4-digit transaction PIN in Settings before paying.");
+    }
+    if (!/^\d{4}$/.test(pin)) {
+      return toast.error("Enter your 4-digit transaction PIN to confirm");
+    }
     setLoading(true);
     try {
       const res = await create({
@@ -124,13 +157,10 @@ function NewOrderPage() {
           items: selected,
           delivery_method: delivery,
           delivery_fee: deliveryFee,
-          address: delivery === "pickup" || service === "cleaning" ? address : undefined,
+          address: delivery === "pickup" ? address : undefined,
           special_instructions: notes || undefined,
           promo_code: promo || undefined,
-          preferred_date: preferredDate || undefined,
-          preferred_time: preferredTime || undefined,
-          space_type: service === "cleaning" ? (cleaningSpace ?? undefined) : undefined,
-          recurring: service === "cleaning" ? recurring : undefined,
+          transaction_pin: pin,
         },
       });
       await Promise.all([
@@ -138,6 +168,7 @@ function NewOrderPage() {
         qc.invalidateQueries({ queryKey: ["my-orders"] }),
         qc.invalidateQueries({ queryKey: ["wallet-tx"] }),
       ]);
+      setPin("");
       toast.success(`Order placed! ${naira(res.total)} deducted.`);
       navigate({ to: "/order/confirmed/$id", params: { id: res.order_id } });
     } catch (err) {
