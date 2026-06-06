@@ -60,6 +60,7 @@ function NewOrderPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [applyingPromo, setApplyingPromo] = useState(false);
+  const [pin, setPin] = useState("");
 
   const deliveryItem = items.find((i) => i.category === "delivery");
   const deliveryFee = delivery === "pickup" ? (deliveryItem?.price ?? 1000) : 0;
