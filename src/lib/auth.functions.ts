@@ -116,7 +116,7 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
   if (!profileId) return null;
   const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("id, full_name, whatsapp_number, wallet_balance, role, language_preference")
+    .select("id, full_name, whatsapp_number, wallet_balance, role, language_preference, transaction_pin_hash")
     .eq("id", profileId)
     .maybeSingle();
   if (!profile) {
@@ -130,8 +130,107 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
     wallet_balance: Number(profile.wallet_balance ?? 0),
     role: profile.role as "customer" | "admin",
     language_preference: profile.language_preference as "en" | "pidgin",
+    has_transaction_pin: !!(profile as { transaction_pin_hash?: string | null }).transaction_pin_hash,
   };
 });
+
+const PinSchema = z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits");
+
+export const setTransactionPin = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        new_pin: PinSchema,
+        current_pin: PinSchema.optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const session = await getFreshXSession();
+    const profileId = session.data?.profileId;
+    if (!profileId) throw new Error("Not signed in");
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("transaction_pin_hash")
+      .eq("id", profileId)
+      .single();
+    const existingHash = (profile as { transaction_pin_hash?: string | null } | null)?.transaction_pin_hash ?? null;
+
+    if (existingHash) {
+      if (!data.current_pin) throw new Error("Enter your current PIN to change it");
+      const ok = await verifyPassword(data.current_pin, existingHash);
+      if (!ok) throw new Error("Current PIN is incorrect");
+    }
+
+    const hash = await hashPassword(data.new_pin);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ transaction_pin_hash: hash })
+      .eq("id", profileId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const verifyTransactionPin = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ pin: PinSchema }).parse(input))
+  .handler(async ({ data }) => {
+    const session = await getFreshXSession();
+    const profileId = session.data?.profileId;
+    if (!profileId) throw new Error("Not signed in");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("transaction_pin_hash")
+      .eq("id", profileId)
+      .single();
+    const hash = (profile as { transaction_pin_hash?: string | null } | null)?.transaction_pin_hash;
+    if (!hash) throw new Error("No transaction PIN set");
+    const ok = await verifyPassword(data.pin, hash);
+    return { ok };
+  });
+
+export const updateProfile = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        full_name: NameSchema.optional(),
+        whatsapp_number: PhoneSchema.optional(),
+        language_preference: z.enum(["en", "pidgin"]).optional(),
+        new_password: PasswordSchema.optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const session = await getFreshXSession();
+    const profileId = session.data?.profileId;
+    if (!profileId) throw new Error("Not signed in");
+
+    if (data.whatsapp_number) {
+      const dupe = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("whatsapp_number", data.whatsapp_number)
+        .neq("id", profileId)
+        .maybeSingle();
+      if (dupe.data) throw new Error("That WhatsApp number is already in use.");
+    }
+
+    const patch: {
+      full_name?: string;
+      whatsapp_number?: string;
+      language_preference?: "en" | "pidgin";
+      password_hash?: string;
+    } = {};
+    if (data.full_name) patch.full_name = data.full_name;
+    if (data.whatsapp_number) patch.whatsapp_number = data.whatsapp_number;
+    if (data.language_preference) patch.language_preference = data.language_preference;
+    if (data.new_password) patch.password_hash = await hashPassword(data.new_password);
+    if (Object.keys(patch).length === 0) return { ok: true };
+
+    const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", profileId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 
 export const updateProfile = createServerFn({ method: "POST" })
   .inputValidator((input) =>
