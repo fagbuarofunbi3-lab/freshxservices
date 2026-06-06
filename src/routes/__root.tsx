@@ -24,10 +24,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Premium laundry and cleaning in Nigeria. Drop your clothes, book a clean — FreshX handles the rest.",
       },
-      { property: "og:title", content: "FreshX Services" },
-      { property: "og:description", content: "Laundry & Cleaning. Done Fresh." },
+      { property: "og:title", content: "FreshX Services — Laundry & Cleaning. Done Fresh." },
+      { property: "og:description", content: "Nigeria's No 1 Automated Laundry and Cleaning Service Company" },
       { property: "og:type", content: "website" },
       { name: "theme-color", content: "#1A56DB" },
+      { name: "twitter:title", content: "FreshX Services — Laundry & Cleaning. Done Fresh." },
+      { name: "description", content: "Nigeria's No 1 Automated Laundry and Cleaning Service Company" },
+      { name: "twitter:description", content: "Nigeria's No 1 Automated Laundry and Cleaning Service Company" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0719e4cf-81f0-4620-b67d-619ea4febacd" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0719e4cf-81f0-4620-b67d-619ea4febacd" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
