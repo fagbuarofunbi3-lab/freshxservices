@@ -45,6 +45,7 @@ const CreateOrderSchema = z.object({
   preferred_time: z.string().trim().max(40).optional(),
   space_type: z.string().trim().max(80).optional(),
   recurring: z.string().trim().max(40).optional(),
+  transaction_pin: z.string().regex(/^\d{4}$/, "Enter your 4-digit PIN"),
 });
 
 export const applyPromo = createServerFn({ method: "POST" })
