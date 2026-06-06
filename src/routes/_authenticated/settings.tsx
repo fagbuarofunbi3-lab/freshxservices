@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { updateProfile } from "@/lib/auth.functions";
+import { setTransactionPin, updateProfile } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { PasswordInput } from "../signup";
 
