@@ -1,13 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Sparkles, ShieldCheck, Minus, Plus } from "lucide-react";
+import { Sparkles, ShieldCheck, Minus, Plus, MessageCircle, Info } from "lucide-react";
 import { applyPromo, createOrder, listServiceItems } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
+
+const WHATSAPP_ADMIN_NUMBER = "2349114292652";
 
 export const Route = createFileRoute("/_authenticated/order/new")({ component: NewOrderPage });
 
