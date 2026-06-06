@@ -386,43 +386,89 @@ function NewOrderPage() {
           <h2 className="font-display text-lg">Order summary</h2>
           <dl className="mt-4 space-y-2 text-sm">
             <Row label="Subtotal" value={naira(subtotal)} />
-            <Row label="Delivery" value={naira(deliveryFee)} />
+            {service === "laundry" && <Row label="Delivery" value={naira(deliveryFee)} />}
             {discount > 0 && <Row label={`Promo (${appliedPromo?.code})`} value={`−${naira(discount)}`} />}
             <div className="border-t border-border pt-2">
-              <Row label="Total" value={naira(total)} bold />
+              <Row label={service === "cleaning" ? "Estimated total" : "Total"} value={naira(total)} bold />
             </div>
           </dl>
-          <div className="mt-4">
-            <div className="flex gap-2">
-              <input
-                value={promo}
-                onChange={(e) => {
-                  setPromo(e.target.value.toUpperCase());
-                  setAppliedPromo(null);
-                }}
-                placeholder="Promo code (try FRESH10)"
-                className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+
+          {service === "laundry" && (
+            <>
+              <div className="mt-4">
+                <div className="flex gap-2">
+                  <input
+                    value={promo}
+                    onChange={(e) => {
+                      setPromo(e.target.value.toUpperCase());
+                      setAppliedPromo(null);
+                    }}
+                    placeholder="Promo code (try FRESH10)"
+                    className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCode}
+                    disabled={applyingPromo || subtotal === 0}
+                    className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    {applyingPromo ? "Checking…" : "Apply"}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
+              </div>
+              {me?.has_transaction_pin ? (
+                <label className="mt-4 block">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">Transaction PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="••••"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-center text-sm tracking-[0.5em]"
+                  />
+                </label>
+              ) : (
+                <div className="mt-4 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs">
+                  You don't have a transaction PIN yet.{" "}
+                  <Link to="/settings" className="font-medium text-primary hover:underline">
+                    Create one in Settings
+                  </Link>{" "}
+                  to pay for laundry orders.
+                </div>
+              )}
               <button
-                type="button"
-                onClick={applyCode}
-                disabled={applyingPromo || subtotal === 0}
-                className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                onClick={confirm}
+                disabled={loading || total === 0 || !me?.has_transaction_pin}
+                className="mt-5 w-full rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {applyingPromo ? "Checking…" : "Apply"}
+                {loading ? "Placing order…" : "Confirm Order"}
               </button>
-            </div>
-          </div>
-          <div className="mt-4 text-xs text-muted-foreground">
-            Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
-          </div>
-          <button
-            onClick={confirm}
-            disabled={loading || total === 0}
-            className="mt-5 w-full rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? "Placing order…" : "Confirm Order"}
-          </button>
+            </>
+          )}
+
+          {service === "cleaning" && (
+            <>
+              <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  Final price may differ based on your location, room size, or other factors.
+                  Our admin will confirm the exact amount with you on WhatsApp.
+                </span>
+              </div>
+              <button
+                onClick={confirm}
+                disabled={total === 0}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <MessageCircle className="h-4 w-4" /> Proceed to WhatsApp admin
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </div>
