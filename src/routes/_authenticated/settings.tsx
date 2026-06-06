@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { updateProfile } from "@/lib/auth.functions";
+import { setTransactionPin, updateProfile } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { PasswordInput } from "../signup";
 
@@ -104,6 +104,78 @@ function SettingsPage() {
           </button>
         </div>
       </section>
+
+      <TransactionPinSection />
     </div>
+  );
+}
+
+function TransactionPinSection() {
+  const { data: me } = useMe();
+  const fn = useServerFn(setTransactionPin);
+  const invalidate = useInvalidateMe();
+  const has = !!me?.has_transaction_pin;
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function save() {
+    if (!/^\d{4}$/.test(next)) return toast.error("PIN must be exactly 4 digits");
+    if (next !== confirm) return toast.error("PINs do not match");
+    if (has && !/^\d{4}$/.test(current)) return toast.error("Enter your current 4-digit PIN");
+    setLoading(true);
+    try {
+      await fn({ data: { new_pin: next, current_pin: has ? current : undefined } });
+      await invalidate();
+      setCurrent(""); setNext(""); setConfirm("");
+      toast.success(has ? "PIN updated" : "Transaction PIN created");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save PIN");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <h2 className="font-display text-lg">Transaction PIN</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {has
+          ? "Your 4-digit PIN is required to pay for laundry orders from your wallet."
+          : "Create a 4-digit PIN. You'll be asked for it whenever you pay for a laundry order."}
+      </p>
+      <div className="mt-4 space-y-3 max-w-xs">
+        {has && (
+          <PinField label="Current PIN" value={current} onChange={setCurrent} />
+        )}
+        <PinField label={has ? "New PIN" : "Create PIN"} value={next} onChange={setNext} />
+        <PinField label="Confirm PIN" value={confirm} onChange={setConfirm} />
+        <button
+          disabled={loading}
+          onClick={save}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? "Saving…" : has ? "Update PIN" : "Create PIN"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function PinField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+      <input
+        type="password"
+        inputMode="numeric"
+        maxLength={4}
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
+        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tracking-[0.5em] text-center"
+        placeholder="••••"
+      />
+    </label>
   );
 }

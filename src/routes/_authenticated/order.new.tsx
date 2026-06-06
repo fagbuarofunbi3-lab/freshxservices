@@ -1,13 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Sparkles, ShieldCheck, Minus, Plus } from "lucide-react";
+import { Sparkles, ShieldCheck, Minus, Plus, MessageCircle, Info } from "lucide-react";
 import { applyPromo, createOrder, listServiceItems } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
+
+const WHATSAPP_ADMIN_NUMBER = "2349114292652";
 
 export const Route = createFileRoute("/_authenticated/order/new")({ component: NewOrderPage });
 
@@ -58,6 +60,7 @@ function NewOrderPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [applyingPromo, setApplyingPromo] = useState(false);
+  const [pin, setPin] = useState("");
 
   const deliveryItem = items.find((i) => i.category === "delivery");
   const deliveryFee = delivery === "pickup" ? (deliveryItem?.price ?? 1000) : 0;
@@ -113,6 +116,39 @@ function NewOrderPage() {
         return { service_item_id: id, name: it.name, unit_price: it.price, quantity: n };
       });
     if (selected.length === 0) return toast.error("Add at least one item");
+
+    // CLEANING → WhatsApp handoff, no wallet charge
+    if (service === "cleaning") {
+      const lines: string[] = [];
+      lines.push(`Hello, my name is ${me?.full_name ?? "a FreshX customer"}.`);
+      lines.push(`I'd like to book a cleaning service.`);
+      lines.push(``);
+      lines.push(`Items I want cleaned:`);
+      selected.forEach((s) => {
+        lines.push(`• ${s.name} × ${s.quantity} — ₦${(s.unit_price * s.quantity).toLocaleString()}`);
+      });
+      lines.push(``);
+      lines.push(`Estimated total (from website): ₦${subtotal.toLocaleString()}`);
+      if (cleaningSpace) lines.push(`Space type: ${cleaningSpace.replace("cleaning_", "")}`);
+      if (recurring) lines.push(`Frequency: ${recurring}`);
+      if (preferredDate) lines.push(`Preferred date: ${preferredDate}`);
+      if (preferredTime) lines.push(`Preferred time: ${preferredTime}`);
+      if (address) lines.push(`Address: ${address}`);
+      if (notes) lines.push(`Notes: ${notes}`);
+      lines.push(``);
+      lines.push(`(I understand the final price may differ based on location, room size or other factors.)`);
+      const url = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+      window.open(url, "_blank");
+      return;
+    }
+
+    // LAUNDRY → wallet + PIN
+    if (!me?.has_transaction_pin) {
+      return toast.error("Set up your 4-digit transaction PIN in Settings before paying.");
+    }
+    if (!/^\d{4}$/.test(pin)) {
+      return toast.error("Enter your 4-digit transaction PIN to confirm");
+    }
     setLoading(true);
     try {
       const res = await create({
@@ -121,13 +157,10 @@ function NewOrderPage() {
           items: selected,
           delivery_method: delivery,
           delivery_fee: deliveryFee,
-          address: delivery === "pickup" || service === "cleaning" ? address : undefined,
+          address: delivery === "pickup" ? address : undefined,
           special_instructions: notes || undefined,
           promo_code: promo || undefined,
-          preferred_date: preferredDate || undefined,
-          preferred_time: preferredTime || undefined,
-          space_type: service === "cleaning" ? (cleaningSpace ?? undefined) : undefined,
-          recurring: service === "cleaning" ? recurring : undefined,
+          transaction_pin: pin,
         },
       });
       await Promise.all([
@@ -135,6 +168,7 @@ function NewOrderPage() {
         qc.invalidateQueries({ queryKey: ["my-orders"] }),
         qc.invalidateQueries({ queryKey: ["wallet-tx"] }),
       ]);
+      setPin("");
       toast.success(`Order placed! ${naira(res.total)} deducted.`);
       navigate({ to: "/order/confirmed/$id", params: { id: res.order_id } });
     } catch (err) {
@@ -352,43 +386,89 @@ function NewOrderPage() {
           <h2 className="font-display text-lg">Order summary</h2>
           <dl className="mt-4 space-y-2 text-sm">
             <Row label="Subtotal" value={naira(subtotal)} />
-            <Row label="Delivery" value={naira(deliveryFee)} />
+            {service === "laundry" && <Row label="Delivery" value={naira(deliveryFee)} />}
             {discount > 0 && <Row label={`Promo (${appliedPromo?.code})`} value={`−${naira(discount)}`} />}
             <div className="border-t border-border pt-2">
-              <Row label="Total" value={naira(total)} bold />
+              <Row label={service === "cleaning" ? "Estimated total" : "Total"} value={naira(total)} bold />
             </div>
           </dl>
-          <div className="mt-4">
-            <div className="flex gap-2">
-              <input
-                value={promo}
-                onChange={(e) => {
-                  setPromo(e.target.value.toUpperCase());
-                  setAppliedPromo(null);
-                }}
-                placeholder="Promo code (try FRESH10)"
-                className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+
+          {service === "laundry" && (
+            <>
+              <div className="mt-4">
+                <div className="flex gap-2">
+                  <input
+                    value={promo}
+                    onChange={(e) => {
+                      setPromo(e.target.value.toUpperCase());
+                      setAppliedPromo(null);
+                    }}
+                    placeholder="Promo code (try FRESH10)"
+                    className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCode}
+                    disabled={applyingPromo || subtotal === 0}
+                    className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    {applyingPromo ? "Checking…" : "Apply"}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">
+                Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
+              </div>
+              {me?.has_transaction_pin ? (
+                <label className="mt-4 block">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">Transaction PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="••••"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-center text-sm tracking-[0.5em]"
+                  />
+                </label>
+              ) : (
+                <div className="mt-4 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs">
+                  You don't have a transaction PIN yet.{" "}
+                  <Link to="/settings" className="font-medium text-primary hover:underline">
+                    Create one in Settings
+                  </Link>{" "}
+                  to pay for laundry orders.
+                </div>
+              )}
               <button
-                type="button"
-                onClick={applyCode}
-                disabled={applyingPromo || subtotal === 0}
-                className="rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                onClick={confirm}
+                disabled={loading || total === 0 || !me?.has_transaction_pin}
+                className="mt-5 w-full rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                {applyingPromo ? "Checking…" : "Apply"}
+                {loading ? "Placing order…" : "Confirm Order"}
               </button>
-            </div>
-          </div>
-          <div className="mt-4 text-xs text-muted-foreground">
-            Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
-          </div>
-          <button
-            onClick={confirm}
-            disabled={loading || total === 0}
-            className="mt-5 w-full rounded-md bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? "Placing order…" : "Confirm Order"}
-          </button>
+            </>
+          )}
+
+          {service === "cleaning" && (
+            <>
+              <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  Final price may differ based on your location, room size, or other factors.
+                  Our admin will confirm the exact amount with you on WhatsApp.
+                </span>
+              </div>
+              <button
+                onClick={confirm}
+                disabled={total === 0}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                <MessageCircle className="h-4 w-4" /> Proceed to WhatsApp admin
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </div>

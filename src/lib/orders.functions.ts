@@ -45,6 +45,7 @@ const CreateOrderSchema = z.object({
   preferred_time: z.string().trim().max(40).optional(),
   space_type: z.string().trim().max(80).optional(),
   recurring: z.string().trim().max(40).optional(),
+  transaction_pin: z.string().regex(/^\d{4}$/, "Enter your 4-digit PIN"),
 });
 
 export const applyPromo = createServerFn({ method: "POST" })
@@ -85,6 +86,25 @@ export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((input) => CreateOrderSchema.parse(input))
   .handler(async ({ data }) => {
     const profileId = await requireProfileId();
+
+    if (data.service_type !== "laundry") {
+      throw new Error("Only laundry orders are paid through the wallet. Cleaning is booked via WhatsApp.");
+    }
+
+    // Verify transaction PIN
+    const { data: pinProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("transaction_pin_hash")
+      .eq("id", profileId)
+      .single();
+    const pinHash = (pinProfile as { transaction_pin_hash?: string | null } | null)?.transaction_pin_hash;
+    if (!pinHash) throw new Error("Set up your 4-digit transaction PIN before paying.");
+    const { data: pinOk, error: pinErr } = await supabaseAdmin.rpc("verify_password" as never, {
+      plain: data.transaction_pin,
+      hash: pinHash,
+    } as never);
+    if (pinErr) throw new Error(pinErr.message);
+    if (pinOk !== true) throw new Error("Incorrect transaction PIN");
 
     // Re-price server-side against the live catalog
     const ids = data.items.map((i) => i.service_item_id);
