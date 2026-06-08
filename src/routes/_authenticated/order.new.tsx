@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Minus, Plus, MessageCircle, Info } from "lucide-react";
-import { applyPromo, createOrder, listServiceItems } from "@/lib/orders.functions";
+import { applyPromo, createOrder, listServiceItems, notifyCleaningRequest } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
