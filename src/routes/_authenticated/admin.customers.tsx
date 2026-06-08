@@ -45,8 +45,8 @@ function AdminCustomers() {
         className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
       />
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-xl border border-border">
+        <table className="w-full min-w-[820px] text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Name</th>
