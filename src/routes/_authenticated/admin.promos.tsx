@@ -65,8 +65,8 @@ function AdminPromos() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-xl border border-border">
+        <table className="w-full min-w-[880px] text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Code</th>
