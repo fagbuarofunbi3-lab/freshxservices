@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/wallet-verify")({
 });
 
 function WalletVerifyPage() {
-  const search = useSearch({ from: "/_authenticated/wallet/verify" });
+  const search = useSearch({ from: "/_authenticated/wallet-verify" });
   const navigate = useNavigate();
   const qc = useQueryClient();
   const invalidateMe = useInvalidateMe();
