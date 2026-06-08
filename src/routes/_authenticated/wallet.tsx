@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { listTransactions, topUpStub } from "@/lib/wallet.functions";
+import { initWalletTopUp, listTransactions } from "@/lib/wallet.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
@@ -13,24 +13,27 @@ function WalletPage() {
   const { data: me } = useMe();
   const qc = useQueryClient();
   const invalidateMe = useInvalidateMe();
-  const topUp = useServerFn(topUpStub);
+  const initTopUp = useServerFn(initWalletTopUp);
   const { data: txs } = useQuery({
     queryKey: ["wallet-tx"],
     queryFn: () => listTransactions(),
   });
   const [amount, setAmount] = useState(2000);
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function onTopUp() {
     if (amount < 500) return toast.error("Minimum top-up is ₦500");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return toast.error("Enter the email to receive your payment receipt");
     setLoading(true);
     try {
-      await topUp({ data: { amount } });
+      const res = await initTopUp({ data: { amount, email } });
       await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
-      toast.success(`Wallet topped up with ${naira(amount)}`);
+      // Redirect to Flutterwave hosted checkout
+      window.location.href = res.payment_link;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Top-up failed");
-    } finally {
+      toast.error(err instanceof Error ? err.message : "Could not start payment");
       setLoading(false);
     }
   }
@@ -43,9 +46,10 @@ function WalletPage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-display text-xl">Demo top-up</h2>
+        <h2 className="font-display text-xl">Top up your wallet</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Real Flutterwave checkout is wired in Phase 3. For now this credits your wallet instantly so you can try the flow.
+          Pay securely with card, bank transfer, USSD or Opay through Flutterwave.
+          Funds appear in your wallet immediately after payment.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           {[1000, 2000, 5000, 10000].map((v) => (
@@ -66,14 +70,28 @@ function WalletPage() {
             onChange={(e) => setAmount(Number(e.target.value))}
             className="w-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
-          <button
-            onClick={onTopUp}
-            disabled={loading}
-            className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
-          >
-            {loading ? "Adding…" : "Add to wallet"}
-          </button>
         </div>
+        <div className="mt-4">
+          <label className="block text-sm">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Email for receipt
+            </span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="mt-1 w-full max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <button
+          onClick={onTopUp}
+          disabled={loading}
+          className="mt-5 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? "Redirecting…" : `Pay ${naira(amount)} with Flutterwave`}
+        </button>
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-6">
