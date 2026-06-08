@@ -54,7 +54,7 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
     // Build redirect URL from incoming request host so it works in preview/prod
     const host = getRequestHost();
     const proto = host.includes("localhost") ? "http" : "https";
-    const redirect_url = `${proto}://${host}/wallet/verify`;
+    const redirect_url = `${proto}://${host}/wallet-verify`;
 
     const { initFlutterwavePayment } = await import("@/lib/flutterwave.server");
     const { link } = await initFlutterwavePayment({
