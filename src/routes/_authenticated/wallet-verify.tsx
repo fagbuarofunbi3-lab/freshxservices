@@ -14,7 +14,7 @@ const SearchSchema = z.object({
   transaction_id: z.string().optional(),
 });
 
-export const Route = createFileRoute("/_authenticated/wallet/verify")({
+export const Route = createFileRoute("/_authenticated/wallet-verify")({
   validateSearch: (s) => SearchSchema.parse(s),
   component: WalletVerifyPage,
 });
