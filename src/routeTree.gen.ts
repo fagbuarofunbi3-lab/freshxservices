@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWalletVerifyRouteImport } from './routes/_authenticated/wallet-verify'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
@@ -46,6 +47,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWalletVerifyRoute =
+  AuthenticatedWalletVerifyRouteImport.update({
+    id: '/wallet-verify',
+    path: '/wallet-verify',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/wallet-verify': typeof AuthenticatedWalletVerifyRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -143,6 +151,7 @@ export interface FileRoutesByTo {
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/wallet-verify': typeof AuthenticatedWalletVerifyRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -163,6 +172,7 @@ export interface FileRoutesById {
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
+  '/_authenticated/wallet-verify': typeof AuthenticatedWalletVerifyRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/settings'
     | '/wallet'
+    | '/wallet-verify'
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/orders'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/settings'
     | '/wallet'
+    | '/wallet-verify'
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/orders'
@@ -219,6 +231,7 @@ export interface FileRouteTypes {
     | '/_authenticated/orders'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
+    | '/_authenticated/wallet-verify'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/orders'
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/wallet-verify': {
+      id: '/_authenticated/wallet-verify'
+      path: '/wallet-verify'
+      fullPath: '/wallet-verify'
+      preLoaderRoute: typeof AuthenticatedWalletVerifyRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/wallet': {
       id: '/_authenticated/wallet'
@@ -396,6 +416,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedWalletVerifyRoute: typeof AuthenticatedWalletVerifyRoute
   AuthenticatedOrderNewRoute: typeof AuthenticatedOrderNewRoute
   AuthenticatedOrderConfirmedIdRoute: typeof AuthenticatedOrderConfirmedIdRoute
 }
@@ -406,6 +427,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedWalletVerifyRoute: AuthenticatedWalletVerifyRoute,
   AuthenticatedOrderNewRoute: AuthenticatedOrderNewRoute,
   AuthenticatedOrderConfirmedIdRoute: AuthenticatedOrderConfirmedIdRoute,
 }

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Minus, Plus, MessageCircle, Info } from "lucide-react";
-import { applyPromo, createOrder, listServiceItems } from "@/lib/orders.functions";
+import { applyPromo, createOrder, listServiceItems, notifyCleaningRequest } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
@@ -39,6 +39,7 @@ function NewOrderPage() {
   const invalidateMe = useInvalidateMe();
   const create = useServerFn(createOrder);
   const applyPromoFn = useServerFn(applyPromo);
+  const notifyCleaning = useServerFn(notifyCleaningRequest);
   const { data: items = [] } = useQuery({
     queryKey: ["service-items"],
     queryFn: () => listServiceItems(),
@@ -138,6 +139,23 @@ function NewOrderPage() {
       lines.push(``);
       lines.push(`(I understand the final price may differ based on location, room size or other factors.)`);
       const url = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+      // Fire-and-forget owner email; never block the WhatsApp handoff
+      notifyCleaning({
+        data: {
+          items: selected.map((s) => ({
+            name: s.name,
+            quantity: s.quantity,
+            line_total: s.unit_price * s.quantity,
+          })),
+          subtotal,
+          space_type: cleaningSpace ?? undefined,
+          recurring,
+          preferred_date: preferredDate || undefined,
+          preferred_time: preferredTime || undefined,
+          address: address || undefined,
+          notes: notes || undefined,
+        },
+      }).catch(() => {});
       window.open(url, "_blank");
       return;
     }

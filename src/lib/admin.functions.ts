@@ -29,18 +29,26 @@ async function requireAdmin(): Promise<string> {
 // ============ Orders queue ============
 export const adminListOrders = createServerFn({ method: "GET" })
   .inputValidator((input) =>
-    z.object({ status: z.string().optional() }).parse(input ?? {}),
+    z
+      .object({
+        status: z.string().optional(),
+        start_date: z.string().datetime().optional(),
+        end_date: z.string().datetime().optional(),
+      })
+      .parse(input ?? {}),
   )
   .handler(async ({ data }) => {
     await requireAdmin();
     let q = supabaseAdmin
       .from("orders")
       .select(
-        "id, profile_id, service_type, status, total_amount, delivery_method, address, created_at, items_json",
+        "id, profile_id, service_type, status, subtotal, delivery_fee, discount_amount, total_amount, delivery_method, address, special_instructions, items_json, created_at",
       )
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(1000);
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
+    if (data.start_date) q = q.gte("created_at", data.start_date);
+    if (data.end_date) q = q.lte("created_at", data.end_date);
     const { data: orders, error } = await q;
     if (error) throw new Error(error.message);
 
@@ -55,18 +63,23 @@ export const adminListOrders = createServerFn({ method: "GET" })
 
     return (orders ?? []).map((o) => {
       const p = pmap.get(o.profile_id as string);
+      const items = ((o.items_json as { items?: Array<{ name: string; quantity: number; line_total: number }> } | null)?.items ?? []);
       return {
         id: o.id as string,
         service_type: o.service_type as string,
         status: o.status as string,
+        subtotal: Number(o.subtotal),
+        delivery_fee: Number(o.delivery_fee),
+        discount_amount: Number(o.discount_amount),
         total_amount: Number(o.total_amount),
         delivery_method: o.delivery_method as string,
         address: (o.address as string | null) ?? null,
+        special_instructions: (o.special_instructions as string | null) ?? null,
         created_at: o.created_at as string,
         customer_name: p?.full_name ?? "—",
         customer_whatsapp: p?.whatsapp_number ?? "—",
-        item_count:
-          ((o.items_json as { items?: unknown[] } | null)?.items ?? []).length,
+        item_count: items.length,
+        items_summary: items.map((i) => `${i.name} ×${i.quantity}`).join(", "),
       };
     });
   });

@@ -253,8 +253,88 @@ export const createOrder = createServerFn({ method: "POST" })
       });
     }
 
+    // Owner notification email (Resend)
+    try {
+      const { sendOrderEmailToOwner } = await import("@/lib/email.server");
+      await sendOrderEmailToOwner({
+        serviceType: "laundry",
+        orderRef: `FX-${(order.id as string).slice(0, 8).toUpperCase()}`,
+        customerName: profile?.full_name ?? "Customer",
+        customerWhatsapp: "—",
+        items,
+        subtotal,
+        deliveryFee,
+        discount,
+        total,
+        delivery: data.delivery_method,
+        address: data.address ?? null,
+        notes: data.special_instructions ?? null,
+      });
+    } catch (err) {
+      console.error("[orders] owner email failed:", err);
+    }
+
     return { ok: true, order_id: order.id as string, total, new_balance: newBalance };
   });
+
+// Cleaning service: no wallet charge, but owner still gets an email when the
+// user clicks "Proceed to WhatsApp admin" from the order builder.
+export const notifyCleaningRequest = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        items: z
+          .array(
+            z.object({
+              name: z.string().min(1).max(200),
+              quantity: z.number().int().min(1).max(200),
+              line_total: z.number().nonnegative(),
+            }),
+          )
+          .min(1)
+          .max(60),
+        subtotal: z.number().nonnegative(),
+        space_type: z.string().trim().max(80).optional(),
+        recurring: z.string().trim().max(40).optional(),
+        preferred_date: z.string().trim().max(40).optional(),
+        preferred_time: z.string().trim().max(40).optional(),
+        address: z.string().trim().max(300).optional(),
+        notes: z.string().trim().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const profileId = await requireProfileId();
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name, whatsapp_number")
+      .eq("id", profileId)
+      .single();
+    try {
+      const { sendOrderEmailToOwner } = await import("@/lib/email.server");
+      await sendOrderEmailToOwner({
+        serviceType: "cleaning",
+        orderRef: `CL-${Date.now().toString(36).toUpperCase()}`,
+        customerName: profile?.full_name ?? "Customer",
+        customerWhatsapp: profile?.whatsapp_number ?? "—",
+        items: data.items,
+        subtotal: data.subtotal,
+        total: data.subtotal,
+        spaceType: data.space_type ?? null,
+        recurring: data.recurring ?? null,
+        preferredDate: data.preferred_date ?? null,
+        preferredTime: data.preferred_time ?? null,
+        address: data.address ?? null,
+        notes: data.notes ?? null,
+        pricingNote:
+          "Estimated price from website. Final cost may vary based on location, room size, or other factors.",
+      });
+    } catch (err) {
+      console.error("[orders] cleaning email failed:", err);
+    }
+    return { ok: true };
+  });
+
 
 async function getPromoUses(promoId: string): Promise<number> {
   const { data } = await supabaseAdmin
