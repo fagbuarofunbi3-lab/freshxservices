@@ -39,6 +39,7 @@ function NewOrderPage() {
   const invalidateMe = useInvalidateMe();
   const create = useServerFn(createOrder);
   const applyPromoFn = useServerFn(applyPromo);
+  const notifyCleaning = useServerFn(notifyCleaningRequest);
   const { data: items = [] } = useQuery({
     queryKey: ["service-items"],
     queryFn: () => listServiceItems(),
