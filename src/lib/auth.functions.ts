@@ -19,6 +19,7 @@ const PhoneSchema = z
   });
 
 const NameSchema = z.string().trim().min(2).max(80);
+const EmailSchema = z.string().trim().toLowerCase().email().max(200);
 const PasswordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
@@ -48,18 +49,27 @@ export const signUp = createServerFn({ method: "POST" })
       .object({
         full_name: NameSchema,
         whatsapp_number: PhoneSchema,
+        email: EmailSchema,
         password: PasswordSchema,
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const existing = await supabaseAdmin
+    const existingPhone = await supabaseAdmin
       .from("profiles")
       .select("id")
       .eq("whatsapp_number", data.whatsapp_number)
       .maybeSingle();
-    if (existing.data) {
+    if (existingPhone.data) {
       throw new Error("An account with this WhatsApp number already exists. Try logging in.");
+    }
+    const existingEmail = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", data.email)
+      .maybeSingle();
+    if (existingEmail.data) {
+      throw new Error("An account with this email already exists.");
     }
     const password_hash = await hashPassword(data.password);
     const { data: created, error } = await supabaseAdmin
@@ -67,6 +77,7 @@ export const signUp = createServerFn({ method: "POST" })
       .insert({
         full_name: data.full_name,
         whatsapp_number: data.whatsapp_number,
+        email: data.email,
         password_hash,
       })
       .select("id")
@@ -116,7 +127,7 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
   if (!profileId) return null;
   const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("id, full_name, whatsapp_number, wallet_balance, role, language_preference, transaction_pin_hash")
+    .select("id, full_name, whatsapp_number, email, wallet_balance, role, language_preference, transaction_pin_hash")
     .eq("id", profileId)
     .maybeSingle();
   if (!profile) {
@@ -127,6 +138,7 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
     id: profile.id as string,
     full_name: profile.full_name as string,
     whatsapp_number: profile.whatsapp_number as string,
+    email: ((profile as { email?: string | null }).email ?? null) as string | null,
     wallet_balance: Number(profile.wallet_balance ?? 0),
     role: profile.role as "customer" | "admin",
     language_preference: profile.language_preference as "en" | "pidgin",
@@ -195,6 +207,7 @@ export const updateProfile = createServerFn({ method: "POST" })
       .object({
         full_name: NameSchema.optional(),
         whatsapp_number: PhoneSchema.optional(),
+        email: EmailSchema.optional(),
         language_preference: z.enum(["en", "pidgin"]).optional(),
         new_password: PasswordSchema.optional(),
       })
@@ -214,20 +227,63 @@ export const updateProfile = createServerFn({ method: "POST" })
         .maybeSingle();
       if (dupe.data) throw new Error("That WhatsApp number is already in use.");
     }
+    if (data.email) {
+      const dupe = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("email", data.email)
+        .neq("id", profileId)
+        .maybeSingle();
+      if (dupe.data) throw new Error("That email is already in use.");
+    }
 
     const patch: {
       full_name?: string;
       whatsapp_number?: string;
+      email?: string;
       language_preference?: "en" | "pidgin";
       password_hash?: string;
     } = {};
     if (data.full_name) patch.full_name = data.full_name;
     if (data.whatsapp_number) patch.whatsapp_number = data.whatsapp_number;
+    if (data.email) patch.email = data.email;
     if (data.language_preference) patch.language_preference = data.language_preference;
     if (data.new_password) patch.password_hash = await hashPassword(data.new_password);
     if (Object.keys(patch).length === 0) return { ok: true };
 
     const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", profileId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Password recovery: verify ownership using WhatsApp number + email pair, then set a new password.
+// This is a basic recovery for MVP — no email send. Both must match the same account.
+export const resetPasswordWithEmail = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        whatsapp_number: PhoneSchema,
+        email: EmailSchema,
+        new_password: PasswordSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email")
+      .eq("whatsapp_number", data.whatsapp_number)
+      .maybeSingle();
+    const profileEmail = (profile as { email?: string | null } | null)?.email ?? null;
+    if (!profile || !profileEmail || profileEmail.toLowerCase() !== data.email) {
+      // Generic failure to avoid leaking which field is wrong
+      throw new Error("No matching account found for that WhatsApp number and email.");
+    }
+    const password_hash = await hashPassword(data.new_password);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ password_hash })
+      .eq("id", profile.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
