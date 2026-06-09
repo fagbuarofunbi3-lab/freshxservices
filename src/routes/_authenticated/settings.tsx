@@ -14,12 +14,13 @@ function SettingsPage() {
   const invalidate = useInvalidateMe();
   const [name, setName] = useState(me?.full_name ?? "");
   const [phone, setPhone] = useState(me?.whatsapp_number ?? "");
+  const [email, setEmail] = useState(me?.email ?? "");
   const [lang, setLang] = useState<"en" | "pidgin">(me?.language_preference ?? "en");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function save(payload: { full_name?: string; whatsapp_number?: string; language_preference?: "en" | "pidgin"; new_password?: string }) {
+  async function save(payload: { full_name?: string; whatsapp_number?: string; email?: string; language_preference?: "en" | "pidgin"; new_password?: string }) {
     setLoading(true);
     try {
       await fn({ data: payload });
@@ -56,9 +57,19 @@ function SettingsPage() {
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </label>
+          <label className="block">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">Email (for password recovery)</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
           <button
             disabled={loading}
-            onClick={() => save({ full_name: name, whatsapp_number: phone })}
+            onClick={() => save({ full_name: name, whatsapp_number: phone, email: email || undefined })}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
             Save profile

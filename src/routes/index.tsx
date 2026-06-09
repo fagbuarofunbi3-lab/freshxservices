@@ -200,6 +200,32 @@ function Landing() {
               Fresh clothes, clean spaces, zero stress.
             </span>
           </div>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <a
+              href="https://wa.me/2348132589218"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary"
+            >
+              <MessageCircle className="h-4 w-4" /> WhatsApp
+            </a>
+            <a
+              href="https://www.instagram.com/freshx_services"
+              target="_blank"
+              rel="noreferrer"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Instagram @freshx_services
+            </a>
+            <a
+              href="https://www.tiktok.com/@freshx.services"
+              target="_blank"
+              rel="noreferrer"
+              className="text-muted-foreground hover:text-primary"
+            >
+              TikTok @freshx.services
+            </a>
+          </div>
           <div className="text-xs text-muted-foreground">© 2025 FreshX Services</div>
         </div>
       </footer>
