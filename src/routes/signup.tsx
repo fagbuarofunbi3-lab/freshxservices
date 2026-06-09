@@ -19,15 +19,21 @@ function SignUpPage() {
   const invalidate = useInvalidateMe();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirm) {
+      toast.error("Passwords do not match");
+      return;
+    }
     setLoading(true);
     try {
-      await fn({ data: { full_name: fullName, whatsapp_number: phone, password } });
+      await fn({ data: { full_name: fullName, whatsapp_number: phone, email, password } });
       await waitForSessionReady();
       await invalidate();
       await router.invalidate();
@@ -41,7 +47,7 @@ function SignUpPage() {
   }
 
   return (
-    <AuthShell title="Create your FreshX account" subtitle="Just your name, WhatsApp number and a password.">
+    <AuthShell title="Create your FreshX account" subtitle="Name, WhatsApp number, email and a password.">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Full name">
           <input
@@ -68,9 +74,24 @@ function SignUpPage() {
             />
           </div>
         </Field>
+        <Field label="Email (for password recovery)">
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            type="email"
+            maxLength={200}
+            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
+        </Field>
         <Field label="Password">
           <PasswordInput value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw((s) => !s)} />
           <span className="mt-1 block text-xs text-muted-foreground">Use at least 8 characters.</span>
+        </Field>
+        <Field label="Confirm password">
+          <PasswordInput value={confirm} onChange={setConfirm} show={showPw} onToggle={() => setShowPw((s) => !s)} />
         </Field>
         <button
           type="submit"
@@ -125,8 +146,6 @@ export function PasswordInput({
     </div>
   );
 }
-
-
 
 export function AuthShell({
   title,
