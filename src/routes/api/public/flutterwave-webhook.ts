@@ -67,7 +67,7 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
             tx_ref,
             flw_ref,
           });
-          console.log("[flw-webhook] Credited", { tx_ref, profile_id, ...result });
+          console.log("[flw-webhook] Credited", { tx_ref, ...result });
           return new Response("ok", { status: 200 });
         } catch (err) {
           console.error("[flw-webhook] Crediting failed", err);
