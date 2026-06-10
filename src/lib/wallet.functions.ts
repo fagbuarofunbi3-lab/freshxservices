@@ -74,6 +74,8 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
 
 // Verify a returned Flutterwave transaction and credit the wallet.
 // Idempotent: refuses to credit twice for the same tx_ref.
+// Falls back to meta.profile_id from the verified Flutterwave transaction
+// when the browser session cookie is missing (e.g. after a long checkout).
 export const verifyWalletTopUp = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
@@ -84,22 +86,8 @@ export const verifyWalletTopUp = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const profileId = await requireProfileId();
-
-    // Idempotency: have we already credited this tx_ref?
-    const { data: existing } = await supabaseAdmin
-      .from("wallet_transactions")
-      .select("id")
-      .eq("description", `Wallet top-up (Flutterwave ${data.tx_ref})`)
-      .maybeSingle();
-    if (existing) {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("wallet_balance")
-        .eq("id", profileId)
-        .single();
-      return { ok: true, already_processed: true, new_balance: Number(profile?.wallet_balance ?? 0) };
-    }
+    const session = await getFreshXSession();
+    const sessionProfileId = session.data?.profileId ?? null;
 
     const { verifyFlutterwavePayment } = await import("@/lib/flutterwave.server");
     const result = await verifyFlutterwavePayment(data.transaction_id);
@@ -114,26 +102,27 @@ export const verifyWalletTopUp = createServerFn({ method: "POST" })
       throw new Error(`Unsupported currency ${result.currency}.`);
     }
 
-    const amount = Math.round(result.amount);
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("wallet_balance")
-      .eq("id", profileId)
-      .single();
-    const balance = Number(profile?.wallet_balance ?? 0);
-    const newBalance = balance + amount;
-    await supabaseAdmin.from("profiles").update({ wallet_balance: newBalance }).eq("id", profileId);
-    await supabaseAdmin.from("wallet_transactions").insert({
+    // Pull profile_id from Flutterwave meta as a fallback when no session.
+    const metaProfileId = typeof result.meta?.profile_id === "string" ? (result.meta.profile_id as string) : undefined;
+    const profileId = sessionProfileId ?? metaProfileId;
+    if (!profileId) {
+      throw new Error("Could not identify the wallet to credit. Please sign in and try again.");
+    }
+    if (sessionProfileId && metaProfileId && sessionProfileId !== metaProfileId) {
+      throw new Error("Session does not match payment owner.");
+    }
+
+    const { creditWalletTopUp } = await import("@/lib/wallet-credit.server");
+    const credit = await creditWalletTopUp({
       profile_id: profileId,
-      type: "credit",
-      amount,
-      description: `Wallet top-up (Flutterwave ${data.tx_ref})`,
+      amount: Math.round(result.amount),
+      tx_ref: data.tx_ref,
+      flw_ref: result.flw_ref,
     });
-    await supabaseAdmin.from("notifications").insert({
-      profile_id: profileId,
-      message: `Wallet topped up with ₦${amount.toLocaleString()}. New balance: ₦${newBalance.toLocaleString()}.`,
-      channel: "in_app",
-      type: "topup",
-    });
-    return { ok: true, already_processed: false, new_balance: newBalance, amount };
+    return {
+      ok: true,
+      already_processed: credit.already_processed,
+      new_balance: credit.new_balance,
+      amount: credit.amount,
+    };
   });

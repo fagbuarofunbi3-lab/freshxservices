@@ -21,6 +21,7 @@ import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiPublicFlutterwaveWebhookRouteImport } from './routes/api/public/flutterwave-webhook'
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedOrderNewRouteImport } from './routes/_authenticated/order.new'
 import { Route as AuthenticatedAdminPromosRouteImport } from './routes/_authenticated/admin.promos'
@@ -89,6 +90,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicFlutterwaveWebhookRoute =
+  ApiPublicFlutterwaveWebhookRouteImport.update({
+    id: '/api/public/flutterwave-webhook',
+    path: '/api/public/flutterwave-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedOrdersIdRoute = AuthenticatedOrdersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
 }
@@ -166,6 +174,7 @@ export interface FileRoutesByTo {
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
 }
@@ -188,6 +197,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/promos': typeof AuthenticatedAdminPromosRoute
   '/_authenticated/order/new': typeof AuthenticatedOrderNewRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
 }
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/admin/promos'
     | '/order/new'
     | '/orders/$id'
+    | '/api/public/flutterwave-webhook'
     | '/admin/'
     | '/order/confirmed/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/admin/promos'
     | '/order/new'
     | '/orders/$id'
+    | '/api/public/flutterwave-webhook'
     | '/admin'
     | '/order/confirmed/$id'
   id:
@@ -250,6 +262,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/promos'
     | '/_authenticated/order/new'
     | '/_authenticated/orders/$id'
+    | '/api/public/flutterwave-webhook'
     | '/_authenticated/admin/'
     | '/_authenticated/order/confirmed/$id'
   fileRoutesById: FileRoutesById
@@ -260,6 +273,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicFlutterwaveWebhookRoute: typeof ApiPublicFlutterwaveWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -347,6 +361,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/flutterwave-webhook': {
+      id: '/api/public/flutterwave-webhook'
+      path: '/api/public/flutterwave-webhook'
+      fullPath: '/api/public/flutterwave-webhook'
+      preLoaderRoute: typeof ApiPublicFlutterwaveWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/orders/$id': {
       id: '/_authenticated/orders/$id'
@@ -462,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  ApiPublicFlutterwaveWebhookRoute: ApiPublicFlutterwaveWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
