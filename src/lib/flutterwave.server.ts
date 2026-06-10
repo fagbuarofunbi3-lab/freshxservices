@@ -52,6 +52,7 @@ export type FlwVerifyResult = {
   currency: string;
   tx_ref: string;
   flw_ref: string;
+  meta?: Record<string, unknown> | null;
 };
 
 export async function verifyFlutterwavePayment(transactionId: string | number): Promise<FlwVerifyResult> {
@@ -61,7 +62,7 @@ export async function verifyFlutterwavePayment(transactionId: string | number): 
   const json = (await res.json()) as {
     status: string;
     message?: string;
-    data?: { status: string; amount: number; currency: string; tx_ref: string; flw_ref: string };
+    data?: { status: string; amount: number; currency: string; tx_ref: string; flw_ref: string; meta?: Record<string, unknown> | null };
   };
   if (json.status !== "success" || !json.data) {
     throw new Error(json.message ?? "Flutterwave verification failed");
@@ -72,5 +73,6 @@ export async function verifyFlutterwavePayment(transactionId: string | number): 
     currency: json.data.currency,
     tx_ref: json.data.tx_ref,
     flw_ref: json.data.flw_ref,
+    meta: json.data.meta ?? null,
   };
 }
