@@ -103,7 +103,7 @@ export const verifyWalletTopUp = createServerFn({ method: "POST" })
     }
 
     // Pull profile_id from Flutterwave meta as a fallback when no session.
-    const metaProfileId = (result as unknown as { meta?: { profile_id?: string } }).meta?.profile_id;
+    const metaProfileId = typeof result.meta?.profile_id === "string" ? (result.meta.profile_id as string) : undefined;
     const profileId = sessionProfileId ?? metaProfileId;
     if (!profileId) {
       throw new Error("Could not identify the wallet to credit. Please sign in and try again.");
