@@ -9,13 +9,26 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
     handlers: {
       POST: async ({ request }) => {
         const expected = process.env.FLUTTERWAVE_WEBHOOK_HASH;
-        const got = request.headers.get("verif-hash");
+        // Flutterwave has used several header names across versions/dashboards.
+        const got =
+          request.headers.get("verif-hash") ||
+          request.headers.get("verifi-hash") ||
+          request.headers.get("flutterwave-signature") ||
+          request.headers.get("x-flutterwave-signature") ||
+          request.headers.get("x-verif-hash");
         if (!expected) {
           console.error("[flw-webhook] FLUTTERWAVE_WEBHOOK_HASH is not configured");
           return new Response("Webhook secret not configured", { status: 500 });
         }
-        if (got !== expected) {
-          console.warn("[flw-webhook] Invalid verif-hash", { got });
+        if (!got || got.trim() !== expected.trim()) {
+          // Log header names (not values) to help diagnose dashboard config.
+          const headerNames: string[] = [];
+          request.headers.forEach((_v, k) => headerNames.push(k));
+          console.warn("[flw-webhook] Invalid signature", {
+            got: got ? `${got.slice(0, 4)}…(len=${got.length})` : null,
+            expectedLen: expected.length,
+            headerNames,
+          });
           return new Response("Invalid signature", { status: 401 });
         }
 
