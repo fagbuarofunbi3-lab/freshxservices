@@ -50,24 +50,36 @@ function WalletVerifyPage() {
         setMessage("Missing transaction details from Flutterwave.");
         return;
       }
-      try {
-        const res = await verify({
-          data: { transaction_id: search.transaction_id, tx_ref: search.tx_ref },
-        });
-        await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
-        if (res.amount) setAmount(res.amount);
-        setState("success");
-        setMessage(
-          res.already_processed
-            ? `This payment was already credited. Balance: ${naira(res.new_balance)}.`
-            : `Wallet credited. New balance: ${naira(res.new_balance)}.`,
-        );
-      } catch (err) {
-        setState("error");
-        setMessage(err instanceof Error ? err.message : "Verification failed");
+      // Retry a couple of times — Flutterwave can take a moment to settle.
+      let lastErr: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await verify({
+            data: { transaction_id: search.transaction_id, tx_ref: search.tx_ref },
+          });
+          await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
+          if (res.amount) setAmount(res.amount);
+          setState("success");
+          setMessage(
+            res.already_processed
+              ? `This payment was already credited. Balance: ${naira(res.new_balance)}.`
+              : `Wallet credited. New balance: ${naira(res.new_balance)}.`,
+          );
+          // Take the user straight back to their dashboard with the new balance.
+          setTimeout(() => navigate({ to: "/dashboard" }), 2500);
+          return;
+        } catch (err) {
+          lastErr = err;
+          // Don't retry definitive failures (cancelled/failed payments).
+          const msg = err instanceof Error ? err.message : "";
+          if (/cancelled|failed|mismatch|currency/i.test(msg)) break;
+          await new Promise((r) => setTimeout(r, 2000));
+        }
       }
+      setState("error");
+      setMessage(lastErr instanceof Error ? lastErr.message : "Verification failed");
     })();
-  }, [search, verify, invalidateMe, qc]);
+  }, [search, verify, invalidateMe, qc, navigate]);
 
   return (
     <div className="mx-auto max-w-md py-12">
