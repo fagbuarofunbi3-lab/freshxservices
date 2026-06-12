@@ -9,7 +9,7 @@ import { applyPromo, createOrder, listServiceItems, notifyCleaningRequest } from
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
-const WHATSAPP_ADMIN_NUMBER = "2348132589218";
+const WHATSAPP_ADMIN_NUMBER = "2349114292652";
 
 export const Route = createFileRoute("/_authenticated/order/new")({ component: NewOrderPage });
 
