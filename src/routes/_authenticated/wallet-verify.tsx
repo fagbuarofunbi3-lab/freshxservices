@@ -8,14 +8,20 @@ import { verifyWalletTopUp } from "@/lib/wallet.functions";
 import { useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
+// Flutterwave sends transaction_id as a number and may use status values like
+// "completed". Coerce everything to strings and never throw on bad input —
+// a throw here causes a 500 error page right after payment.
 const SearchSchema = z.object({
-  status: z.string().optional(),
-  tx_ref: z.string().optional(),
-  transaction_id: z.string().optional(),
+  status: z.coerce.string().optional(),
+  tx_ref: z.coerce.string().optional(),
+  transaction_id: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/wallet-verify")({
-  validateSearch: (s) => SearchSchema.parse(s),
+  validateSearch: (s): z.infer<typeof SearchSchema> => {
+    const parsed = SearchSchema.safeParse(s);
+    return parsed.success ? parsed.data : {};
+  },
   component: WalletVerifyPage,
 });
 
