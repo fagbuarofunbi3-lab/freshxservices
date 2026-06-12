@@ -46,8 +46,9 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
         const amount = Number(data?.amount ?? 0);
         const currency: string = data?.currency ?? "NGN";
         const transaction_id = data?.id;
-        const meta = data?.meta ?? {};
-        const profile_id: string | undefined = meta?.profile_id;
+        const meta = data?.meta ?? data?.meta_data ?? {};
+        const payloadProfileId: string | undefined =
+          typeof meta?.profile_id === "string" ? meta.profile_id : undefined;
 
         if (!tx_ref || !transaction_id) {
           return new Response("Missing tx fields", { status: 400 });
@@ -60,10 +61,6 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
           console.warn("[flw-webhook] Unsupported currency", currency);
           return new Response("ok", { status: 200 });
         }
-        if (!profile_id) {
-          console.error("[flw-webhook] Missing meta.profile_id for tx_ref", tx_ref);
-          return new Response("Missing profile_id", { status: 400 });
-        }
 
         // Re-verify with Flutterwave before crediting (defense in depth).
         const { verifyFlutterwavePayment } = await import("@/lib/flutterwave.server");
@@ -73,6 +70,28 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
             console.warn("[flw-webhook] Verify mismatch", { verified, tx_ref });
             return new Response("Verify failed", { status: 400 });
           }
+
+          // Resolve the profile: webhook meta → verified meta → tx_ref prefix.
+          let profile_id =
+            payloadProfileId ??
+            (typeof verified.meta?.profile_id === "string"
+              ? (verified.meta.profile_id as string)
+              : undefined);
+          if (!profile_id && /^FX-TOPUP-[0-9a-f]{8}-\d+$/i.test(tx_ref)) {
+            const prefix = tx_ref.split("-")[2].toLowerCase();
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { data: matches } = await supabaseAdmin
+              .from("profiles")
+              .select("id")
+              .like("id", `${prefix}%`)
+              .limit(2);
+            if (matches && matches.length === 1) profile_id = matches[0].id as string;
+          }
+          if (!profile_id) {
+            console.error("[flw-webhook] Could not resolve profile for tx_ref", tx_ref);
+            return new Response("Missing profile_id", { status: 400 });
+          }
+
           const { creditWalletTopUp } = await import("@/lib/wallet-credit.server");
           const result = await creditWalletTopUp({
             profile_id,
