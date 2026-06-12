@@ -8,14 +8,20 @@ import { verifyWalletTopUp } from "@/lib/wallet.functions";
 import { useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
 
+// Flutterwave sends transaction_id as a number and may use status values like
+// "completed". Coerce everything to strings and never throw on bad input —
+// a throw here causes a 500 error page right after payment.
 const SearchSchema = z.object({
-  status: z.string().optional(),
-  tx_ref: z.string().optional(),
-  transaction_id: z.string().optional(),
+  status: z.coerce.string().optional(),
+  tx_ref: z.coerce.string().optional(),
+  transaction_id: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/wallet-verify")({
-  validateSearch: (s) => SearchSchema.parse(s),
+  validateSearch: (s): z.infer<typeof SearchSchema> => {
+    const parsed = SearchSchema.safeParse(s);
+    return parsed.success ? parsed.data : {};
+  },
   component: WalletVerifyPage,
 });
 
@@ -44,24 +50,36 @@ function WalletVerifyPage() {
         setMessage("Missing transaction details from Flutterwave.");
         return;
       }
-      try {
-        const res = await verify({
-          data: { transaction_id: search.transaction_id, tx_ref: search.tx_ref },
-        });
-        await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
-        if (res.amount) setAmount(res.amount);
-        setState("success");
-        setMessage(
-          res.already_processed
-            ? `This payment was already credited. Balance: ${naira(res.new_balance)}.`
-            : `Wallet credited. New balance: ${naira(res.new_balance)}.`,
-        );
-      } catch (err) {
-        setState("error");
-        setMessage(err instanceof Error ? err.message : "Verification failed");
+      // Retry a couple of times — Flutterwave can take a moment to settle.
+      let lastErr: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await verify({
+            data: { transaction_id: search.transaction_id, tx_ref: search.tx_ref },
+          });
+          await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
+          if (res.amount) setAmount(res.amount);
+          setState("success");
+          setMessage(
+            res.already_processed
+              ? `This payment was already credited. Balance: ${naira(res.new_balance)}.`
+              : `Wallet credited. New balance: ${naira(res.new_balance)}.`,
+          );
+          // Take the user straight back to their dashboard with the new balance.
+          setTimeout(() => navigate({ to: "/dashboard" }), 2500);
+          return;
+        } catch (err) {
+          lastErr = err;
+          // Don't retry definitive failures (cancelled/failed payments).
+          const msg = err instanceof Error ? err.message : "";
+          if (/cancelled|failed|mismatch|currency/i.test(msg)) break;
+          await new Promise((r) => setTimeout(r, 2000));
+        }
       }
+      setState("error");
+      setMessage(lastErr instanceof Error ? lastErr.message : "Verification failed");
     })();
-  }, [search, verify, invalidateMe, qc]);
+  }, [search, verify, invalidateMe, qc, navigate]);
 
   return (
     <div className="mx-auto max-w-md py-12">
