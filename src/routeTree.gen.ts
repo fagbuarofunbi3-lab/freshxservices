@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WalletVerifyRouteImport } from './routes/wallet-verify'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedWalletVerifyRouteImport } from './routes/_authenticated/wallet-verify'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
@@ -30,6 +30,11 @@ import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin.catalog'
 import { Route as AuthenticatedOrderConfirmedIdRouteImport } from './routes/_authenticated/order.confirmed.$id'
 
+const WalletVerifyRoute = WalletVerifyRouteImport.update({
+  id: '/wallet-verify',
+  path: '/wallet-verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -54,12 +59,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedWalletVerifyRoute =
-  AuthenticatedWalletVerifyRouteImport.update({
-    id: '/wallet-verify',
-    path: '/wallet-verify',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -142,12 +141,12 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/wallet-verify': typeof WalletVerifyRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
-  '/wallet-verify': typeof AuthenticatedWalletVerifyRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -163,11 +162,11 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/wallet-verify': typeof WalletVerifyRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
-  '/wallet-verify': typeof AuthenticatedWalletVerifyRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -185,12 +184,12 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/wallet-verify': typeof WalletVerifyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
-  '/_authenticated/wallet-verify': typeof AuthenticatedWalletVerifyRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -208,12 +207,12 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/wallet-verify'
     | '/admin'
     | '/dashboard'
     | '/orders'
     | '/settings'
     | '/wallet'
-    | '/wallet-verify'
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/orders'
@@ -229,11 +228,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/wallet-verify'
     | '/dashboard'
     | '/orders'
     | '/settings'
     | '/wallet'
-    | '/wallet-verify'
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/orders'
@@ -250,12 +249,12 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/wallet-verify'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/orders'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
-    | '/_authenticated/wallet-verify'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/orders'
@@ -273,11 +272,19 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  WalletVerifyRoute: typeof WalletVerifyRoute
   ApiPublicFlutterwaveWebhookRoute: typeof ApiPublicFlutterwaveWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wallet-verify': {
+      id: '/wallet-verify'
+      path: '/wallet-verify'
+      fullPath: '/wallet-verify'
+      preLoaderRoute: typeof WalletVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -312,13 +319,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/wallet-verify': {
-      id: '/_authenticated/wallet-verify'
-      path: '/wallet-verify'
-      fullPath: '/wallet-verify'
-      preLoaderRoute: typeof AuthenticatedWalletVerifyRouteImport
-      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/wallet': {
       id: '/_authenticated/wallet'
@@ -457,7 +457,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
-  AuthenticatedWalletVerifyRoute: typeof AuthenticatedWalletVerifyRoute
   AuthenticatedOrderNewRoute: typeof AuthenticatedOrderNewRoute
   AuthenticatedOrderConfirmedIdRoute: typeof AuthenticatedOrderConfirmedIdRoute
 }
@@ -468,7 +467,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
-  AuthenticatedWalletVerifyRoute: AuthenticatedWalletVerifyRoute,
   AuthenticatedOrderNewRoute: AuthenticatedOrderNewRoute,
   AuthenticatedOrderConfirmedIdRoute: AuthenticatedOrderConfirmedIdRoute,
 }
@@ -483,6 +481,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  WalletVerifyRoute: WalletVerifyRoute,
   ApiPublicFlutterwaveWebhookRoute: ApiPublicFlutterwaveWebhookRoute,
 }
 export const routeTree = rootRouteImport

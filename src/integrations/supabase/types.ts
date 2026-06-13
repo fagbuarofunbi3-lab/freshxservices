@@ -282,6 +282,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_wallet_topup_atomic: {
+        Args: { _amount: number; _profile_id: string; _tx_ref: string }
+        Returns: {
+          already_processed: boolean
+          amount: number
+          new_balance: number
+          profile_id: string
+        }[]
+      }
       crypt_password: { Args: { plain: string }; Returns: string }
       verify_password: {
         Args: { hash: string; plain: string }

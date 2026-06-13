@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { verifyWalletTopUp } from "@/lib/wallet.functions";
-import { useInvalidateMe } from "../__root";
+import { useInvalidateMe } from "./__root";
 import { naira } from "@/lib/format";
 
 // Flutterwave sends transaction_id as a number and may use status values like
@@ -17,7 +17,7 @@ const SearchSchema = z.object({
   transaction_id: z.coerce.string().optional(),
 });
 
-export const Route = createFileRoute("/_authenticated/wallet-verify")({
+export const Route = createFileRoute("/wallet-verify")({
   validateSearch: (s): z.infer<typeof SearchSchema> => {
     const parsed = SearchSchema.safeParse(s);
     return parsed.success ? parsed.data : {};
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/wallet-verify")({
 });
 
 function WalletVerifyPage() {
-  const search = useSearch({ from: "/_authenticated/wallet-verify" });
+  const search = useSearch({ from: "/wallet-verify" });
   const navigate = useNavigate();
   const qc = useQueryClient();
   const invalidateMe = useInvalidateMe();
@@ -66,7 +66,7 @@ function WalletVerifyPage() {
               : `Wallet credited. New balance: ${naira(res.new_balance)}.`,
           );
           // Take the user straight back to their dashboard with the new balance.
-          setTimeout(() => navigate({ to: "/dashboard" }), 2500);
+          setTimeout(() => navigate({ to: "/dashboard", replace: true }), 1200);
           return;
         } catch (err) {
           lastErr = err;

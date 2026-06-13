@@ -125,15 +125,13 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
   const session = await getFreshXSession();
   const profileId = session.data?.profileId;
   if (!profileId) return null;
-  const { data: profile } = await supabaseAdmin
+  const { data: profile, error } = await supabaseAdmin
     .from("profiles")
     .select("id, full_name, whatsapp_number, email, wallet_balance, role, language_preference, transaction_pin_hash")
     .eq("id", profileId)
     .maybeSingle();
-  if (!profile) {
-    await session.clear();
-    return null;
-  }
+  if (error) throw new Error(error.message);
+  if (!profile) return null;
   return {
     id: profile.id as string,
     full_name: profile.full_name as string,
