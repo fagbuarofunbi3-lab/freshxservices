@@ -17,7 +17,7 @@ const SearchSchema = z.object({
   transaction_id: z.coerce.string().optional(),
 });
 
-export const Route = createFileRoute("/_authenticated/wallet-verify")({
+export const Route = createFileRoute("/wallet-verify")({
   validateSearch: (s): z.infer<typeof SearchSchema> => {
     const parsed = SearchSchema.safeParse(s);
     return parsed.success ? parsed.data : {};
