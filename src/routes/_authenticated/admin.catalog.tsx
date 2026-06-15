@@ -137,6 +137,15 @@ function AdminCatalog() {
     error,
   } = useQuery({ queryKey: ["admin-catalog"], queryFn: () => adminListServiceItems() });
   const [newItem, setNewItem] = useState<Row>(() => ({ ...emptyRow }));
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | CategoryValue>("all");
+
+  const filteredItems = (items ?? []).filter((it) => {
+    if (categoryFilter !== "all" && it.category !== categoryFilter) return false;
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return it.name.toLowerCase().includes(q) || it.category.toLowerCase().includes(q);
+  });
 
   const save = useMutation({
     mutationFn: (row: Row) => adminUpsertServiceItem({ data: row }),
@@ -187,8 +196,29 @@ function AdminCatalog() {
             </p>
           </div>
           {items?.length ? (
-            <span className="text-sm text-muted-foreground">{items.length} items</span>
+            <span className="text-sm text-muted-foreground">
+              {filteredItems.length} of {items.length} items
+            </span>
           ) : null}
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-[1fr_240px]">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by item name or category…"
+            className="min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as "all" | CategoryValue)}
+            className="min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All categories</option>
+            {CATEGORY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
 
         {isLoading && (
@@ -206,8 +236,13 @@ function AdminCatalog() {
             No prices have been added yet.
           </div>
         )}
+        {!isLoading && !isError && items?.length && filteredItems.length === 0 && (
+          <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+            No items match your search.
+          </div>
+        )}
         <div className="space-y-3">
-          {(items ?? []).map((item) => (
+          {filteredItems.map((item) => (
             <EditableServiceItem
               key={item.id}
               row={{ ...item, category: item.category as CategoryValue }}
