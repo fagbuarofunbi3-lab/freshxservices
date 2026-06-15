@@ -62,16 +62,22 @@ function NewOrderPage() {
   const [loading, setLoading] = useState(false);
   const [applyingPromo, setApplyingPromo] = useState(false);
   const [pin, setPin] = useState("");
+  const [itemSearch, setItemSearch] = useState("");
+
+
 
   const deliveryItem = items.find((i) => i.category === "delivery");
   const deliveryFee = delivery === "pickup" ? (deliveryItem?.price ?? 1000) : 0;
 
   const visibleItems = useMemo(() => {
-    if (service === "laundry") return items.filter((i) => i.category === tab);
-    if (service === "cleaning" && cleaningSpace)
-      return items.filter((i) => i.category === cleaningSpace);
-    return [];
-  }, [items, service, tab, cleaningSpace]);
+    let base: typeof items = [];
+    if (service === "laundry") base = items.filter((i) => i.category === tab);
+    else if (service === "cleaning" && cleaningSpace)
+      base = items.filter((i) => i.category === cleaningSpace);
+    const q = itemSearch.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((i) => i.name.toLowerCase().includes(q));
+  }, [items, service, tab, cleaningSpace, itemSearch]);
 
   const subtotal = useMemo(
     () =>
@@ -270,7 +276,20 @@ function NewOrderPage() {
 
         {(service === "laundry" || cleaningSpace) && (
           <motion.div layout className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border p-3">
+              <input
+                value={itemSearch}
+                onChange={(e) => setItemSearch(e.target.value)}
+                placeholder={`Search ${service === "laundry" ? "laundry" : "cleaning"} items…`}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            </div>
             <ul className="divide-y divide-border">
+              {visibleItems.length === 0 && (
+                <li className="px-5 py-6 text-center text-sm text-muted-foreground">
+                  No items match your search.
+                </li>
+              )}
               {visibleItems.map((it) => {
                 const n = qty[it.id] ?? 0;
                 return (
