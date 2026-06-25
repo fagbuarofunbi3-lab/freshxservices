@@ -92,12 +92,23 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
             return new Response("Missing profile_id", { status: 400 });
           }
 
+          const promoOwnerId =
+            typeof verified.meta?.promo_owner_profile_id === "string"
+              ? (verified.meta.promo_owner_profile_id as string)
+              : null;
+          const promoCommission = Number(verified.meta?.promo_commission_amount ?? 0);
+          const promoCode =
+            typeof verified.meta?.promo_code === "string" ? (verified.meta.promo_code as string) : null;
+
           const { creditWalletTopUp } = await import("@/lib/wallet-credit.server");
           const result = await creditWalletTopUp({
             profile_id,
             amount: Math.round(verified.amount || amount),
             tx_ref,
             flw_ref,
+            promo_owner_profile_id: promoOwnerId && promoOwnerId !== profile_id ? promoOwnerId : null,
+            promo_commission_amount: promoCommission > 0 ? Math.round(promoCommission) : 0,
+            promo_code: promoCode,
           });
           console.log("[flw-webhook] Credited", { tx_ref, ...result });
           return new Response("ok", { status: 200 });
