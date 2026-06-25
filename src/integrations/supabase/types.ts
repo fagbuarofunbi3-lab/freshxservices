@@ -174,6 +174,7 @@ export type Database = {
           id: string
           is_active: boolean
           min_order_amount: number
+          owner_profile_id: string | null
           times_used: number
           type: string
           usage_limit: number | null
@@ -186,6 +187,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           min_order_amount?: number
+          owner_profile_id?: string | null
           times_used?: number
           type: string
           usage_limit?: number | null
@@ -198,12 +200,21 @@ export type Database = {
           id?: string
           is_active?: boolean
           min_order_amount?: number
+          owner_profile_id?: string | null
           times_used?: number
           type?: string
           usage_limit?: number | null
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "promo_codes_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_items: {
         Row: {
@@ -282,6 +293,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_promo_commission: {
+        Args: {
+          _commission_amount: number
+          _owner_profile_id: string
+          _promo_code: string
+          _tx_ref: string
+        }
+        Returns: number
+      }
       credit_wallet_topup_atomic: {
         Args: { _amount: number; _profile_id: string; _tx_ref: string }
         Returns: {

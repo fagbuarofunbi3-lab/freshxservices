@@ -241,6 +241,77 @@ export const adminDeletePromoCode = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Create or update a personal promo code linked to a specific customer.
+// The owner earns this same percentage as wallet commission whenever
+// someone else uses the code on a Flutterwave top-up.
+export const adminUpsertCustomerPromo = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        owner_profile_id: z.string().uuid(),
+        code: z.string().trim().min(3).max(40).regex(/^[A-Z0-9_-]+$/i, "Use A-Z, 0-9, _ or -"),
+        percentage: z.number().min(1).max(50),
+        is_active: z.boolean().default(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const code = data.code.toUpperCase();
+    // Ensure this code is not already used by a different owner / different settings
+    const { data: existing } = await supabaseAdmin
+      .from("promo_codes")
+      .select("id, owner_profile_id")
+      .ilike("code", code)
+      .maybeSingle();
+
+    if (existing && existing.owner_profile_id && existing.owner_profile_id !== data.owner_profile_id) {
+      throw new Error("That code is already assigned to another customer.");
+    }
+
+    const patch = {
+      code,
+      type: "percentage" as const,
+      value: data.percentage,
+      min_order_amount: 0,
+      expiry_date: null,
+      usage_limit: null,
+      is_active: data.is_active,
+      owner_profile_id: data.owner_profile_id,
+    };
+
+    if (existing) {
+      const { error } = await supabaseAdmin.from("promo_codes").update(patch).eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("promo_codes").insert(patch);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, code };
+  });
+
+// List a customer's owned promo code (if any) so the admin can edit it.
+export const adminGetCustomerPromo = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ owner_profile_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { data: rows } = await supabaseAdmin
+      .from("promo_codes")
+      .select("id, code, type, value, is_active, times_used")
+      .eq("owner_profile_id", data.owner_profile_id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const r = rows?.[0];
+    if (!r) return null;
+    return {
+      id: r.id as string,
+      code: r.code as string,
+      percentage: Number(r.value),
+      is_active: !!r.is_active,
+      times_used: Number(r.times_used ?? 0),
+    };
+  });
+
 // ============ Customers ============
 export const adminListCustomers = createServerFn({ method: "GET" }).handler(async () => {
   await requireAdmin();
