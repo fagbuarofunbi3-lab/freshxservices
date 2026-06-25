@@ -31,8 +31,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "FreshX Services — Laundry & Cleaning. Done Fresh." },
       { name: "description", content: "Nigeria's No 1 Automated Laundry and Cleaning Service Company" },
       { name: "twitter:description", content: "Nigeria's No 1 Automated Laundry and Cleaning Service Company" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0719e4cf-81f0-4620-b67d-619ea4febacd" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0719e4cf-81f0-4620-b67d-619ea4febacd" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/P6tYa8bgNFdi3LRtOQ8wq2lDpCl1/social-images/social-1782379668112-c7f1df8e-7baf-4358-a717-c7dc951af556.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/P6tYa8bgNFdi3LRtOQ8wq2lDpCl1/social-images/social-1782379668112-c7f1df8e-7baf-4358-a717-c7dc951af556.webp" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
