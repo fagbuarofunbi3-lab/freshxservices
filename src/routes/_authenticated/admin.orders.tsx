@@ -79,27 +79,49 @@ function AdminOrders() {
 
   async function exportExcel() {
     if (!data?.length) return toast.error("Nothing to export for this week");
-    const xlsx = await import("xlsx");
-    const rows = data.map((o) => ({
-      "Order ID": `FX-${o.id.slice(0, 8).toUpperCase()}`,
-      "Date": new Date(o.created_at).toLocaleString(),
-      "Customer": o.customer_name,
-      "WhatsApp": o.customer_whatsapp,
-      "Service": o.service_type,
-      "Items": o.items_summary,
-      "Delivery": o.delivery_method,
-      "Address": o.address ?? "",
-      "Subtotal": o.subtotal,
-      "Delivery fee": o.delivery_fee,
-      "Discount": o.discount_amount,
-      "Total (₦)": o.total_amount,
-      "Status": o.status,
-    }));
-    const ws = xlsx.utils.json_to_sheet(rows);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Orders");
-    const label = `FreshX-Orders_${weekStart.toISOString().slice(0, 10)}.xlsx`;
-    xlsx.writeFile(wb, label);
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Orders");
+    ws.columns = [
+      { header: "Order ID", key: "id", width: 18 },
+      { header: "Date", key: "date", width: 22 },
+      { header: "Customer", key: "customer", width: 24 },
+      { header: "WhatsApp", key: "whatsapp", width: 16 },
+      { header: "Service", key: "service", width: 12 },
+      { header: "Items", key: "items", width: 40 },
+      { header: "Delivery", key: "delivery", width: 12 },
+      { header: "Address", key: "address", width: 30 },
+      { header: "Subtotal", key: "subtotal", width: 12 },
+      { header: "Delivery fee", key: "delivery_fee", width: 12 },
+      { header: "Discount", key: "discount", width: 12 },
+      { header: "Total (₦)", key: "total", width: 14 },
+      { header: "Status", key: "status", width: 14 },
+    ];
+    data.forEach((o) => {
+      ws.addRow({
+        id: `FX-${o.id.slice(0, 8).toUpperCase()}`,
+        date: new Date(o.created_at).toLocaleString(),
+        customer: o.customer_name,
+        whatsapp: o.customer_whatsapp,
+        service: o.service_type,
+        items: o.items_summary,
+        delivery: o.delivery_method,
+        address: o.address ?? "",
+        subtotal: o.subtotal,
+        delivery_fee: o.delivery_fee,
+        discount: o.discount_amount,
+        total: o.total_amount,
+        status: o.status,
+      });
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `FreshX-Orders_${weekStart.toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
     toast.success("Excel downloaded");
   }
 
