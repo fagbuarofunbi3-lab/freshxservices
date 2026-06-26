@@ -137,11 +137,13 @@ export const createOrder = createServerFn({ method: "POST" })
     // Promo
     let discount = 0;
     let promoId: string | null = null;
+    let promoCodeStr: string | null = null;
+    let promoOwnerId: string | null = null;
     if (data.promo_code) {
       const code = data.promo_code.toUpperCase();
       const { data: promo } = await supabaseAdmin
         .from("promo_codes")
-        .select("id, type, value, min_order_amount, expiry_date, usage_limit, times_used, is_active")
+        .select("id, code, type, value, min_order_amount, expiry_date, usage_limit, times_used, is_active, owner_profile_id")
         .eq("code", code)
         .maybeSingle();
       if (
@@ -149,13 +151,16 @@ export const createOrder = createServerFn({ method: "POST" })
         promo.is_active &&
         (!promo.expiry_date || new Date(promo.expiry_date as string) >= new Date()) &&
         (promo.usage_limit == null || (promo.times_used as number) < (promo.usage_limit as number)) &&
-        subtotal >= Number(promo.min_order_amount)
+        subtotal >= Number(promo.min_order_amount) &&
+        (promo.owner_profile_id as string | null) !== profileId
       ) {
         discount =
           promo.type === "percentage"
             ? Math.round((subtotal * Number(promo.value)) / 100)
             : Math.min(Number(promo.value), subtotal);
         promoId = promo.id as string;
+        promoCodeStr = promo.code as string;
+        promoOwnerId = (promo.owner_profile_id as string | null) ?? null;
       }
     }
 
@@ -210,11 +215,35 @@ export const createOrder = createServerFn({ method: "POST" })
       order_id: order.id,
     });
     if (promoId) {
-      await supabaseAdmin.rpc as never; // (no-op; increment below)
       await supabaseAdmin
         .from("promo_codes")
         .update({ times_used: (await getPromoUses(promoId)) + 1 })
         .eq("id", promoId);
+    }
+
+    // Promo owner commission — credit the customer who owns the code with the discount amount.
+    if (promoOwnerId && discount > 0 && promoOwnerId !== profileId) {
+      const { data: ownerRow } = await supabaseAdmin
+        .from("profiles")
+        .select("wallet_balance")
+        .eq("id", promoOwnerId)
+        .single();
+      const ownerBalance = Number(ownerRow?.wallet_balance ?? 0);
+      const ownerNew = ownerBalance + discount;
+      await supabaseAdmin.from("profiles").update({ wallet_balance: ownerNew }).eq("id", promoOwnerId);
+      await supabaseAdmin.from("wallet_transactions").insert({
+        profile_id: promoOwnerId,
+        type: "credit",
+        amount: discount,
+        description: `Promo commission (${promoCodeStr ?? "code"}) — order FX-${(order.id as string).slice(0, 8).toUpperCase()}`,
+        order_id: order.id,
+      });
+      await supabaseAdmin.from("notifications").insert({
+        profile_id: promoOwnerId,
+        message: `You earned ₦${discount.toLocaleString()} from promo code ${promoCodeStr ?? ""}. New balance: ₦${ownerNew.toLocaleString()}.`,
+        channel: "in_app",
+        type: "promo_commission",
+      });
     }
 
     // Queue notifications (in-app + WhatsApp-pending)
