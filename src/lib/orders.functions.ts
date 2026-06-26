@@ -215,11 +215,35 @@ export const createOrder = createServerFn({ method: "POST" })
       order_id: order.id,
     });
     if (promoId) {
-      await supabaseAdmin.rpc as never; // (no-op; increment below)
       await supabaseAdmin
         .from("promo_codes")
         .update({ times_used: (await getPromoUses(promoId)) + 1 })
         .eq("id", promoId);
+    }
+
+    // Promo owner commission — credit the customer who owns the code with the discount amount.
+    if (promoOwnerId && discount > 0 && promoOwnerId !== profileId) {
+      const { data: ownerRow } = await supabaseAdmin
+        .from("profiles")
+        .select("wallet_balance")
+        .eq("id", promoOwnerId)
+        .single();
+      const ownerBalance = Number(ownerRow?.wallet_balance ?? 0);
+      const ownerNew = ownerBalance + discount;
+      await supabaseAdmin.from("profiles").update({ wallet_balance: ownerNew }).eq("id", promoOwnerId);
+      await supabaseAdmin.from("wallet_transactions").insert({
+        profile_id: promoOwnerId,
+        type: "credit",
+        amount: discount,
+        description: `Promo commission (${promoCodeStr ?? "code"}) — order FX-${(order.id as string).slice(0, 8).toUpperCase()}`,
+        order_id: order.id,
+      });
+      await supabaseAdmin.from("notifications").insert({
+        profile_id: promoOwnerId,
+        message: `You earned ₦${discount.toLocaleString()} from promo code ${promoCodeStr ?? ""}. New balance: ₦${ownerNew.toLocaleString()}.`,
+        channel: "in_app",
+        type: "promo_commission",
+      });
     }
 
     // Queue notifications (in-app + WhatsApp-pending)
