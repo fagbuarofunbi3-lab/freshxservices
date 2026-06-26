@@ -137,11 +137,13 @@ export const createOrder = createServerFn({ method: "POST" })
     // Promo
     let discount = 0;
     let promoId: string | null = null;
+    let promoCodeStr: string | null = null;
+    let promoOwnerId: string | null = null;
     if (data.promo_code) {
       const code = data.promo_code.toUpperCase();
       const { data: promo } = await supabaseAdmin
         .from("promo_codes")
-        .select("id, type, value, min_order_amount, expiry_date, usage_limit, times_used, is_active")
+        .select("id, code, type, value, min_order_amount, expiry_date, usage_limit, times_used, is_active, owner_profile_id")
         .eq("code", code)
         .maybeSingle();
       if (
@@ -149,13 +151,16 @@ export const createOrder = createServerFn({ method: "POST" })
         promo.is_active &&
         (!promo.expiry_date || new Date(promo.expiry_date as string) >= new Date()) &&
         (promo.usage_limit == null || (promo.times_used as number) < (promo.usage_limit as number)) &&
-        subtotal >= Number(promo.min_order_amount)
+        subtotal >= Number(promo.min_order_amount) &&
+        (promo.owner_profile_id as string | null) !== profileId
       ) {
         discount =
           promo.type === "percentage"
             ? Math.round((subtotal * Number(promo.value)) / 100)
             : Math.min(Number(promo.value), subtotal);
         promoId = promo.id as string;
+        promoCodeStr = promo.code as string;
+        promoOwnerId = (promo.owner_profile_id as string | null) ?? null;
       }
     }
 
