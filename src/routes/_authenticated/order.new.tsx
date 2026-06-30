@@ -502,6 +502,20 @@ function NewOrderPage() {
 
           {service === "cleaning" && (
             <>
+              <label className="mt-4 block">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Promo code (optional)
+                </span>
+                <input
+                  value={promo}
+                  onChange={(e) => setPromo(e.target.value.toUpperCase())}
+                  placeholder="Ambassador code"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                <span className="mt-1 block text-[11px] text-muted-foreground">
+                  We'll include this in your WhatsApp message so the admin knows whose code you used.
+                </span>
+              </label>
               <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>
