@@ -234,6 +234,14 @@ function Landing() {
             >
               TikTok @freshx.services
             </a>
+            <a
+              href={`https://wa.me/${contactNumber}?text=${encodeURIComponent("Hello FreshX, I'd like to get in touch.")}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+            >
+              <Phone className="h-4 w-4" /> Contact us
+            </a>
           </div>
           <div className="text-xs text-muted-foreground">© 2025 FreshX Services</div>
         </div>
