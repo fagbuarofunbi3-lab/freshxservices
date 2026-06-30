@@ -37,7 +37,7 @@ function AuthedLayout() {
   ] as const;
   const items = me?.role === "admin"
     ? ([...baseItems, { to: "/admin", icon: Shield, label: "Admin" }] as const)
-    : baseItems;
+    : ([...baseItems, { to: "/ambassador", icon: GraduationCap, label: "Ambassador" }] as const);
 
   return (
     <div className="min-h-screen bg-[color:var(--surface)] text-foreground">
