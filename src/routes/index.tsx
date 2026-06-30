@@ -8,6 +8,12 @@ import { getContactWhatsapp } from "@/lib/site-settings.functions";
 export const Route = createFileRoute("/")({ component: Landing });
 
 function Landing() {
+  const getContact = useServerFn(getContactWhatsapp);
+  const { data: contact } = useQuery({
+    queryKey: ["contact-whatsapp"],
+    queryFn: () => getContact({}),
+  });
+  const contactNumber = contact?.number ?? "2348132589218";
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* NAV */}
