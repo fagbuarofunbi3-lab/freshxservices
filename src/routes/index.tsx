@@ -1,10 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight } from "lucide-react";
+import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone } from "lucide-react";
+import { getContactWhatsapp } from "@/lib/site-settings.functions";
 
 export const Route = createFileRoute("/")({ component: Landing });
 
 function Landing() {
+  const getContact = useServerFn(getContactWhatsapp);
+  const { data: contact } = useQuery({
+    queryKey: ["contact-whatsapp"],
+    queryFn: () => getContact({}),
+  });
+  const contactNumber = contact?.number ?? "2348132589218";
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* NAV */}
@@ -224,6 +233,14 @@ function Landing() {
               className="text-muted-foreground hover:text-primary"
             >
               TikTok @freshx.services
+            </a>
+            <a
+              href={`https://wa.me/${contactNumber}?text=${encodeURIComponent("Hello FreshX, I'd like to get in touch.")}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+            >
+              <Phone className="h-4 w-4" /> Contact us
             </a>
           </div>
           <div className="text-xs text-muted-foreground">© 2025 FreshX Services</div>

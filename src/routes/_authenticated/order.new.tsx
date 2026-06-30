@@ -142,6 +142,7 @@ function NewOrderPage() {
       if (preferredTime) lines.push(`Preferred time: ${preferredTime}`);
       if (address) lines.push(`Address: ${address}`);
       if (notes) lines.push(`Notes: ${notes}`);
+      if (promo.trim()) lines.push(`Promo code: ${promo.trim().toUpperCase()}`);
       lines.push(``);
       lines.push(`(I understand the final price may differ based on location, room size or other factors.)`);
       const url = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -406,6 +407,17 @@ function NewOrderPage() {
                 className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             )}
+            {delivery === "dropoff" && (
+              <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary-soft p-3 text-xs">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <div>
+                  <div className="font-semibold text-foreground">Drop-off location</div>
+                  <div className="mt-0.5 text-muted-foreground">
+                    Ground floor, Mandela Hostel Block A, University of Port Harcourt (Uniport).
+                  </div>
+                </div>
+              </div>
+            )}
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -490,6 +502,20 @@ function NewOrderPage() {
 
           {service === "cleaning" && (
             <>
+              <label className="mt-4 block">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Promo code (optional)
+                </span>
+                <input
+                  value={promo}
+                  onChange={(e) => setPromo(e.target.value.toUpperCase())}
+                  placeholder="Ambassador code"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                <span className="mt-1 block text-[11px] text-muted-foreground">
+                  We'll include this in your WhatsApp message so the admin knows whose code you used.
+                </span>
+              </label>
               <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>

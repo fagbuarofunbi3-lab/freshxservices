@@ -19,11 +19,13 @@ import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAmbassadorRouteImport } from './routes/_authenticated/ambassador'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicFlutterwaveWebhookRouteImport } from './routes/api/public/flutterwave-webhook'
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedOrderNewRouteImport } from './routes/_authenticated/order.new'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 import { Route as AuthenticatedAdminPromosRouteImport } from './routes/_authenticated/admin.promos'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin.orders'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
@@ -79,6 +81,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAmbassadorRoute = AuthenticatedAmbassadorRouteImport.update({
+  id: '/ambassador',
+  path: '/ambassador',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -105,6 +112,12 @@ const AuthenticatedOrderNewRoute = AuthenticatedOrderNewRouteImport.update({
   path: '/order/new',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPromosRoute =
   AuthenticatedAdminPromosRouteImport.update({
     id: '/promos',
@@ -143,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/ambassador': typeof AuthenticatedAmbassadorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
@@ -151,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
@@ -163,6 +178,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/wallet-verify': typeof WalletVerifyRoute
+  '/ambassador': typeof AuthenticatedAmbassadorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
@@ -171,6 +187,7 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
@@ -186,6 +203,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/ambassador': typeof AuthenticatedAmbassadorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -194,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/promos': typeof AuthenticatedAdminPromosRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/order/new': typeof AuthenticatedOrderNewRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
@@ -209,6 +228,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/wallet-verify'
     | '/admin'
+    | '/ambassador'
     | '/dashboard'
     | '/orders'
     | '/settings'
@@ -217,6 +237,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/orders'
     | '/admin/promos'
+    | '/admin/settings'
     | '/order/new'
     | '/orders/$id'
     | '/api/public/flutterwave-webhook'
@@ -229,6 +250,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/wallet-verify'
+    | '/ambassador'
     | '/dashboard'
     | '/orders'
     | '/settings'
@@ -237,6 +259,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/orders'
     | '/admin/promos'
+    | '/admin/settings'
     | '/order/new'
     | '/orders/$id'
     | '/api/public/flutterwave-webhook'
@@ -251,6 +274,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/wallet-verify'
     | '/_authenticated/admin'
+    | '/_authenticated/ambassador'
     | '/_authenticated/dashboard'
     | '/_authenticated/orders'
     | '/_authenticated/settings'
@@ -259,6 +283,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/promos'
+    | '/_authenticated/admin/settings'
     | '/_authenticated/order/new'
     | '/_authenticated/orders/$id'
     | '/api/public/flutterwave-webhook'
@@ -348,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/ambassador': {
+      id: '/_authenticated/ambassador'
+      path: '/ambassador'
+      fullPath: '/ambassador'
+      preLoaderRoute: typeof AuthenticatedAmbassadorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -382,6 +414,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/order/new'
       preLoaderRoute: typeof AuthenticatedOrderNewRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/promos': {
       id: '/_authenticated/admin/promos'
@@ -426,6 +465,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminPromosRoute: typeof AuthenticatedAdminPromosRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -434,6 +474,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
   AuthenticatedAdminPromosRoute: AuthenticatedAdminPromosRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
@@ -453,6 +494,7 @@ const AuthenticatedOrdersRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAmbassadorRoute: typeof AuthenticatedAmbassadorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -463,6 +505,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAmbassadorRoute: AuthenticatedAmbassadorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
