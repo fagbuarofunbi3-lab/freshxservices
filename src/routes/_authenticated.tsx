@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut, Shield } from "lucide-react";
+import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut, Shield, GraduationCap } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "./__root";
 import { NotificationsBell } from "@/components/NotificationsBell";
