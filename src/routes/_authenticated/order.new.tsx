@@ -407,6 +407,17 @@ function NewOrderPage() {
                 className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             )}
+            {delivery === "dropoff" && (
+              <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary-soft p-3 text-xs">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <div>
+                  <div className="font-semibold text-foreground">Drop-off location</div>
+                  <div className="mt-0.5 text-muted-foreground">
+                    Ground floor, Mandela Hostel Block A, University of Port Harcourt (Uniport).
+                  </div>
+                </div>
+              </div>
+            )}
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
