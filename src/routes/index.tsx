@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight } from "lucide-react";
+import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone } from "lucide-react";
+import { getContactWhatsapp } from "@/lib/site-settings.functions";
 
 export const Route = createFileRoute("/")({ component: Landing });
 
