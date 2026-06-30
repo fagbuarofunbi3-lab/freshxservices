@@ -142,6 +142,7 @@ function NewOrderPage() {
       if (preferredTime) lines.push(`Preferred time: ${preferredTime}`);
       if (address) lines.push(`Address: ${address}`);
       if (notes) lines.push(`Notes: ${notes}`);
+      if (promo.trim()) lines.push(`Promo code: ${promo.trim().toUpperCase()}`);
       lines.push(``);
       lines.push(`(I understand the final price may differ based on location, room size or other factors.)`);
       const url = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
