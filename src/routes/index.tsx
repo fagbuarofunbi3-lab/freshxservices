@@ -289,6 +289,59 @@ function ServiceCard({
           {cta}
         </Link>
       </div>
+      </div>
     </motion.div>
   );
 }
+
+function PromoVideo({ url }: { url: string }) {
+  const trimmed = url.trim();
+  const yt = toYouTubeEmbed(trimmed);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-black shadow-xl shadow-primary/10">
+      <div className="aspect-video w-full bg-[color:var(--surface)]">
+        {yt ? (
+          <iframe
+            src={yt}
+            title="FreshX promo video"
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : trimmed ? (
+          <video
+            src={trimmed}
+            className="h-full w-full object-cover"
+            controls
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Video className="h-8 w-8" />
+            <div className="text-xs">Promo video coming soon</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function toYouTubeEmbed(url: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) {
+      return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    }
+    if (u.hostname.includes("youtube.com")) {
+      const id = u.searchParams.get("v");
+      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (u.pathname.startsWith("/embed/")) return url;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
