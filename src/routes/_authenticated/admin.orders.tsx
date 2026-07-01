@@ -43,12 +43,6 @@ function isoFromDaysAgo(days: number) {
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);
 }
-function monthsAgoISO(months: number) {
-  const d = new Date();
-  d.setMonth(d.getMonth() - months);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
 
 function AdminOrders() {
   const [status, setStatus] = useState<(typeof STATUSES)[number]>("all");
