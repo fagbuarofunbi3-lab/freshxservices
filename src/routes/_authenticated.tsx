@@ -1,7 +1,9 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut, Shield, GraduationCap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut, Shield, GraduationCap, MessageCircle } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";
+import { getContactWhatsapp } from "@/lib/site-settings.functions";
 import { useMe, useInvalidateMe } from "./__root";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
