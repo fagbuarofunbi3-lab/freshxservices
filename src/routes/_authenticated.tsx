@@ -22,6 +22,13 @@ function AuthedLayout() {
   const invalidate = useInvalidateMe();
   const router = useRouter();
   const navigate = useNavigate();
+  const getContact = useServerFn(getContactWhatsapp);
+  const { data: contact } = useQuery({
+    queryKey: ["contact-whatsapp"],
+    queryFn: () => getContact({}),
+  });
+  const contactNumber = contact?.number ?? "2348132589218";
+
 
   async function onLogout() {
     await logoutFn({});
