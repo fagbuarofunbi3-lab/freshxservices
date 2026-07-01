@@ -95,8 +95,11 @@ function Landing() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="relative mx-auto w-full max-w-sm"
+            className="relative mx-auto w-full max-w-sm space-y-4"
           >
+            {/* Promo video billboard — shown to everyone; blank if admin hasn't set one */}
+            <PromoVideo url={videoUrl} />
+
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
