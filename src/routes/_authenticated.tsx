@@ -98,10 +98,21 @@ function AuthedLayout() {
         <Outlet />
       </main>
 
+      {/* Floating Contact Us WhatsApp button — always visible for logged-in users */}
+      <a
+        href={`https://wa.me/${contactNumber}?text=${encodeURIComponent("Hello FreshX, I need help.")}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Contact us on WhatsApp"
+        className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl transition hover:scale-105 md:bottom-8"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </a>
+
       {me?.role === "admin" && (
         <Link
           to="/admin"
-          className="fixed bottom-20 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
+          className="fixed bottom-20 right-20 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
           aria-label="Open admin dashboard"
         >
           <Shield className="h-5 w-5" />
