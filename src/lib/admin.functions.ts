@@ -424,3 +424,56 @@ export const adminReports = createServerFn({ method: "GET" }).handler(async () =
     active_orders: activeOrders ?? 0,
   };
 });
+
+// Monthly breakdown for a given year (Jan..Dec).
+export const adminMonthlyReports = createServerFn({ method: "GET" })
+  .inputValidator((input) =>
+    z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const year = data.year;
+    const start = new Date(Date.UTC(year, 0, 1)).toISOString();
+    const end = new Date(Date.UTC(year + 1, 0, 1)).toISOString();
+
+    const [{ data: orders }, { data: txns }] = await Promise.all([
+      supabaseAdmin
+        .from("orders")
+        .select("total_amount, status, service_type, created_at")
+        .gte("created_at", start)
+        .lt("created_at", end)
+        .limit(10000),
+      supabaseAdmin
+        .from("wallet_transactions")
+        .select("type, amount, created_at")
+        .gte("created_at", start)
+        .lt("created_at", end)
+        .limit(10000),
+    ]);
+
+    const months = Array.from({ length: 12 }, () => ({
+      revenue: 0,
+      laundry: 0,
+      cleaning: 0,
+      orders: 0,
+      topups: 0,
+    }));
+
+    for (const o of orders ?? []) {
+      const m = new Date(o.created_at as string).getUTCMonth();
+      months[m].orders += 1;
+      if (o.status !== "cancelled") {
+        const amt = Number(o.total_amount);
+        months[m].revenue += amt;
+        if (o.service_type === "laundry") months[m].laundry += amt;
+        if (o.service_type === "cleaning") months[m].cleaning += amt;
+      }
+    }
+    for (const t of txns ?? []) {
+      if (t.type !== "credit") continue;
+      const m = new Date(t.created_at as string).getUTCMonth();
+      months[m].topups += Number(t.amount);
+    }
+
+    return { year, months };
+  });
