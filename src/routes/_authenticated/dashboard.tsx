@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, Shield } from "lucide-react";
+import { AlertTriangle, ArrowRight, ImageIcon, Shield } from "lucide-react";
 import { listMyOrders } from "@/lib/orders.functions";
+import { getSiteMedia } from "@/lib/site-settings.functions";
 import { useMe } from "../__root";
 import { naira } from "@/lib/format";
 
