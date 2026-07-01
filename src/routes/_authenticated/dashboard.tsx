@@ -163,6 +163,9 @@ function DashboardPage() {
         )}
       </section>
 
+      {/* Rolling picture strip — admin editable in Settings */}
+      <ImageCarousel images={media?.images ?? []} />
+
       {/* Recent orders */}
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center justify-between">
