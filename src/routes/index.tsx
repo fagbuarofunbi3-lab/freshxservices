@@ -293,8 +293,6 @@ function ServiceCard({
   );
 }
 
-  );
-}
 
 function PromoVideo({ url }: { url: string }) {
   const trimmed = url.trim();
