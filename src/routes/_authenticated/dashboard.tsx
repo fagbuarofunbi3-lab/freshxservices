@@ -28,6 +28,11 @@ function DashboardPage() {
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
   });
+  const getMedia = useServerFn(getSiteMedia);
+  const { data: media } = useQuery({
+    queryKey: ["site-media"],
+    queryFn: () => getMedia({}),
+  });
   const active = orders?.find((o) => o.status !== "delivered" && o.status !== "cancelled");
   const recent = orders?.slice(0, 3) ?? [];
   const balance = me?.wallet_balance ?? 0;
