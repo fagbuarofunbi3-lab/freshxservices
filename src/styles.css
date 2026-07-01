@@ -142,3 +142,13 @@
     pointer-events: none;
   }
 }
+
+@keyframes freshx-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.freshx-marquee-track {
+  width: max-content;
+  animation: freshx-marquee 22s linear infinite;
+}
+.freshx-marquee-track:hover { animation-play-state: paused; }

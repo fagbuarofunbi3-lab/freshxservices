@@ -2,18 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone } from "lucide-react";
-import { getContactWhatsapp } from "@/lib/site-settings.functions";
+import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone, Video } from "lucide-react";
+import { getContactWhatsapp, getSiteMedia } from "@/lib/site-settings.functions";
 
 export const Route = createFileRoute("/")({ component: Landing });
 
 function Landing() {
   const getContact = useServerFn(getContactWhatsapp);
+  const getMedia = useServerFn(getSiteMedia);
   const { data: contact } = useQuery({
     queryKey: ["contact-whatsapp"],
     queryFn: () => getContact({}),
   });
+  const { data: media } = useQuery({
+    queryKey: ["site-media"],
+    queryFn: () => getMedia({}),
+  });
   const contactNumber = contact?.number ?? "2348132589218";
+  const videoUrl = media?.video_url ?? "";
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* NAV */}
@@ -89,8 +95,11 @@ function Landing() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="relative mx-auto w-full max-w-sm"
+            className="relative mx-auto w-full max-w-sm space-y-4"
           >
+            {/* Promo video billboard — shown to everyone; blank if admin hasn't set one */}
+            <PromoVideo url={videoUrl} />
+
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -283,3 +292,56 @@ function ServiceCard({
     </motion.div>
   );
 }
+
+
+function PromoVideo({ url }: { url: string }) {
+  const trimmed = url.trim();
+  const yt = toYouTubeEmbed(trimmed);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-black shadow-xl shadow-primary/10">
+      <div className="aspect-video w-full bg-[color:var(--surface)]">
+        {yt ? (
+          <iframe
+            src={yt}
+            title="FreshX promo video"
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : trimmed ? (
+          <video
+            src={trimmed}
+            className="h-full w-full object-cover"
+            controls
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Video className="h-8 w-8" />
+            <div className="text-xs">Promo video coming soon</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function toYouTubeEmbed(url: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) {
+      return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    }
+    if (u.hostname.includes("youtube.com")) {
+      const id = u.searchParams.get("v");
+      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (u.pathname.startsWith("/embed/")) return url;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+

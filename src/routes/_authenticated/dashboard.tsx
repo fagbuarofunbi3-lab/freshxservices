@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, Shield } from "lucide-react";
+import { AlertTriangle, ArrowRight, ImageIcon, Shield } from "lucide-react";
 import { listMyOrders } from "@/lib/orders.functions";
+import { getSiteMedia } from "@/lib/site-settings.functions";
 import { useMe } from "../__root";
 import { naira } from "@/lib/format";
 
@@ -25,6 +27,11 @@ function DashboardPage() {
     queryFn: () => listMyOrders(),
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
+  });
+  const getMedia = useServerFn(getSiteMedia);
+  const { data: media } = useQuery({
+    queryKey: ["site-media"],
+    queryFn: () => getMedia({}),
   });
   const active = orders?.find((o) => o.status !== "delivered" && o.status !== "cancelled");
   const recent = orders?.slice(0, 3) ?? [];
@@ -156,6 +163,9 @@ function DashboardPage() {
         )}
       </section>
 
+      {/* Rolling picture strip — admin editable in Settings */}
+      <ImageCarousel images={media?.images ?? []} />
+
       {/* Recent orders */}
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center justify-between">
@@ -210,3 +220,39 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+function ImageCarousel({ images }: { images: string[] }) {
+  const list = (images ?? []).filter(Boolean).slice(0, 4);
+  if (list.length === 0) {
+    return (
+      <section className="rounded-2xl border border-dashed border-border bg-card p-8">
+        <div className="flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+          <ImageIcon className="h-6 w-6" />
+          <div className="text-xs">Featured pictures will appear here.</div>
+        </div>
+      </section>
+    );
+  }
+  // Duplicate the list so the marquee can loop seamlessly.
+  const loop = [...list, ...list];
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-card p-3">
+      <div className="freshx-marquee-track flex gap-3">
+        {loop.map((src, i) => (
+          <div
+            key={`${src}-${i}`}
+            className="relative h-40 w-64 shrink-0 overflow-hidden rounded-xl bg-muted"
+          >
+            <img
+              src={src}
+              alt=""
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+

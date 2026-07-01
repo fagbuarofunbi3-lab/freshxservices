@@ -17,41 +17,92 @@ const NEXT: Record<string, string[]> = {
   cancelled: [],
 };
 
-// Monday start of the week containing the given date, local time.
+type RangeMode = "week" | "month" | "90d" | "6m" | "1y" | "custom";
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 function startOfWeek(d: Date): Date {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
-  const day = x.getDay(); // 0 Sun..6 Sat
-  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   x.setDate(x.getDate() + diff);
-  return x;
-}
-function endOfWeek(start: Date): Date {
-  const x = new Date(start);
-  x.setDate(x.getDate() + 7);
-  x.setMilliseconds(-1);
   return x;
 }
 function fmtDate(d: Date) {
   return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function isoFromDaysAgo(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
 
 function AdminOrders() {
   const [status, setStatus] = useState<(typeof STATUSES)[number]>("all");
+  const [mode, setMode] = useState<RangeMode>("week");
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
-  const weekEnd = useMemo(() => endOfWeek(weekStart), [weekStart]);
-  const isCurrentWeek =
-    weekStart.getTime() === startOfWeek(new Date()).getTime();
+  const now = new Date();
+  const [monthYear, setMonthYear] = useState<number>(now.getFullYear());
+  const [monthIdx, setMonthIdx] = useState<number>(now.getMonth());
+  const [customStart, setCustomStart] = useState<string>(isoFromDaysAgo(7));
+  const [customEnd, setCustomEnd] = useState<string>(todayISO());
+
+  // Compute the actual [start, end] Date range from the current mode.
+  const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
+    if (mode === "week") {
+      const s = weekStart;
+      const e = new Date(s);
+      e.setDate(e.getDate() + 7);
+      e.setMilliseconds(-1);
+      return { rangeStart: s, rangeEnd: e, rangeLabel: `${fmtDate(s)} → ${fmtDate(e)}` };
+    }
+    if (mode === "month") {
+      const s = new Date(monthYear, monthIdx, 1);
+      const e = new Date(monthYear, monthIdx + 1, 1);
+      e.setMilliseconds(-1);
+      return { rangeStart: s, rangeEnd: e, rangeLabel: `${MONTH_NAMES[monthIdx]} ${monthYear}` };
+    }
+    if (mode === "90d" || mode === "6m" || mode === "1y") {
+      const s = new Date();
+      if (mode === "90d") s.setDate(s.getDate() - 90);
+      if (mode === "6m") s.setMonth(s.getMonth() - 6);
+      if (mode === "1y") s.setFullYear(s.getFullYear() - 1);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date();
+      return {
+        rangeStart: s,
+        rangeEnd: e,
+        rangeLabel: `${fmtDate(s)} → ${fmtDate(e)}`,
+      };
+    }
+    // custom
+    const s = new Date(customStart + "T00:00:00");
+    const e = new Date(customEnd + "T23:59:59");
+    return { rangeStart: s, rangeEnd: e, rangeLabel: `${fmtDate(s)} → ${fmtDate(e)}` };
+  }, [mode, weekStart, monthYear, monthIdx, customStart, customEnd]);
 
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-orders", status, weekStart.toISOString()],
+    queryKey: [
+      "admin-orders",
+      status,
+      mode,
+      rangeStart.toISOString(),
+      rangeEnd.toISOString(),
+    ],
     queryFn: () =>
       adminListOrders({
         data: {
           status,
-          start_date: weekStart.toISOString(),
-          end_date: weekEnd.toISOString(),
+          start_date: rangeStart.toISOString(),
+          end_date: rangeEnd.toISOString(),
         },
       }),
     refetchInterval: 15_000,
@@ -76,9 +127,17 @@ function AdminOrders() {
       return startOfWeek(next);
     });
   }
+  function shiftMonth(delta: number) {
+    let m = monthIdx + delta;
+    let y = monthYear;
+    while (m < 0) { m += 12; y -= 1; }
+    while (m > 11) { m -= 12; y += 1; }
+    setMonthIdx(m);
+    setMonthYear(y);
+  }
 
   async function exportExcel() {
-    if (!data?.length) return toast.error("Nothing to export for this week");
+    if (!data?.length) return toast.error("Nothing to export for this range");
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Orders");
@@ -119,14 +178,16 @@ function AdminOrders() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `FreshX-Orders_${weekStart.toISOString().slice(0, 10)}.xlsx`;
+    a.download = `FreshX-Orders_${rangeStart.toISOString().slice(0, 10)}_to_${rangeEnd
+      .toISOString()
+      .slice(0, 10)}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Excel downloaded");
   }
 
   async function exportPdf() {
-    if (!data?.length) return toast.error("Nothing to export for this week");
+    if (!data?.length) return toast.error("Nothing to export for this range");
     const [{ default: jsPDF }, autoTableMod] = await Promise.all([
       import("jspdf"),
       import("jspdf-autotable"),
@@ -134,7 +195,7 @@ function AdminOrders() {
     const autoTable = (autoTableMod as { default: (doc: unknown, opts: unknown) => unknown }).default;
     const doc = new jsPDF({ orientation: "landscape" });
     doc.setFontSize(14);
-    doc.text(`FreshX Orders — ${fmtDate(weekStart)} to ${fmtDate(weekEnd)}`, 14, 14);
+    doc.text(`FreshX Orders — ${rangeLabel}`, 14, 14);
     doc.setFontSize(10);
     doc.text(
       `Total orders: ${data.length} · Revenue: NGN ${data
@@ -160,49 +221,134 @@ function AdminOrders() {
       headStyles: { fillColor: [15, 23, 42], textColor: 255 },
       columnStyles: { 4: { cellWidth: 80 } },
     });
-    doc.save(`FreshX-Orders_${weekStart.toISOString().slice(0, 10)}.pdf`);
+    doc.save(`FreshX-Orders_${rangeStart.toISOString().slice(0, 10)}_to_${rangeEnd
+      .toISOString()
+      .slice(0, 10)}.pdf`);
     toast.success("PDF downloaded");
   }
 
-  const weekRevenue = (data ?? [])
+  const rangeRevenue = (data ?? [])
     .filter((o) => o.status !== "cancelled")
     .reduce((s, o) => s + o.total_amount, 0);
 
+  const MODES: { key: RangeMode; label: string }[] = [
+    { key: "week", label: "Week" },
+    { key: "month", label: "Month" },
+    { key: "90d", label: "90 days" },
+    { key: "6m", label: "6 months" },
+    { key: "1y", label: "1 year" },
+    { key: "custom", label: "Custom" },
+  ];
+
   return (
     <div className="space-y-4">
-      {/* Week navigator */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
-        <button
-          onClick={() => shiftWeek(-7)}
-          className="rounded-md border border-border p-2 hover:bg-muted"
-          aria-label="Previous week"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <div className="flex-1 min-w-[200px]">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground">
-            {isCurrentWeek ? "This week" : "Past week"}
-          </div>
-          <div className="text-sm font-medium">
-            {fmtDate(weekStart)} → {fmtDate(weekEnd)}
-          </div>
-        </div>
-        <button
-          onClick={() => shiftWeek(7)}
-          disabled={isCurrentWeek}
-          className="rounded-md border border-border p-2 hover:bg-muted disabled:opacity-40"
-          aria-label="Next week"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        {!isCurrentWeek && (
+      {/* Range mode picker */}
+      <div className="flex flex-wrap gap-1 rounded-xl border border-border bg-card p-1">
+        {MODES.map((m) => (
           <button
-            onClick={() => setWeekStart(startOfWeek(new Date()))}
-            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            key={m.key}
+            onClick={() => setMode(m.key)}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              mode === m.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+            }`}
           >
-            Jump to this week
+            {m.label}
           </button>
+        ))}
+      </div>
+
+      {/* Range navigator */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
+        {mode === "week" && (
+          <>
+            <button
+              onClick={() => shiftWeek(-7)}
+              className="rounded-md border border-border p-2 hover:bg-muted"
+              aria-label="Previous week"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex-1 min-w-[200px]">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Week</div>
+              <div className="text-sm font-medium">{rangeLabel}</div>
+            </div>
+            <button
+              onClick={() => shiftWeek(7)}
+              disabled={weekStart.getTime() >= startOfWeek(new Date()).getTime()}
+              className="rounded-md border border-border p-2 hover:bg-muted disabled:opacity-40"
+              aria-label="Next week"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
         )}
+
+        {mode === "month" && (
+          <>
+            <button
+              onClick={() => shiftMonth(-1)}
+              className="rounded-md border border-border p-2 hover:bg-muted"
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex-1 flex flex-wrap items-center gap-2">
+              <select
+                value={monthIdx}
+                onChange={(e) => setMonthIdx(Number(e.target.value))}
+                className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              >
+                {MONTH_NAMES.map((n, i) => (
+                  <option key={n} value={i}>{n}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                value={monthYear}
+                min={2020}
+                max={now.getFullYear() + 1}
+                onChange={(e) => setMonthYear(Number(e.target.value))}
+                className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              onClick={() => shiftMonth(1)}
+              className="rounded-md border border-border p-2 hover:bg-muted"
+              aria-label="Next month"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+
+        {(mode === "90d" || mode === "6m" || mode === "1y") && (
+          <div className="flex-1">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              {mode === "90d" ? "Last 90 days" : mode === "6m" ? "Last 6 months" : "Last 1 year"}
+            </div>
+            <div className="text-sm font-medium">{rangeLabel}</div>
+          </div>
+        )}
+
+        {mode === "custom" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs text-muted-foreground">From</label>
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+            />
+            <label className="text-xs text-muted-foreground">To</label>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+            />
+          </div>
+        )}
+
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={exportExcel}
@@ -237,17 +383,17 @@ function AdminOrders() {
       {/* Summary chips */}
       <div className="flex flex-wrap gap-3 text-xs">
         <div className="rounded-md border border-border bg-card px-3 py-1.5">
-          Orders this week: <span className="font-semibold">{data?.length ?? 0}</span>
+          Orders in range: <span className="font-semibold">{data?.length ?? 0}</span>
         </div>
         <div className="rounded-md border border-border bg-card px-3 py-1.5">
-          Revenue: <span className="font-semibold">{naira(weekRevenue)}</span>
+          Revenue: <span className="font-semibold">{naira(rangeRevenue)}</span>
         </div>
       </div>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : !data?.length ? (
-        <p className="text-sm text-muted-foreground">No orders for this week.</p>
+        <p className="text-sm text-muted-foreground">No orders in this range.</p>
       ) : (
         <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-xl border border-border">
           <table className="w-full min-w-[960px] text-sm">
