@@ -2,18 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone } from "lucide-react";
-import { getContactWhatsapp } from "@/lib/site-settings.functions";
+import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone, Video } from "lucide-react";
+import { getContactWhatsapp, getSiteMedia } from "@/lib/site-settings.functions";
 
 export const Route = createFileRoute("/")({ component: Landing });
 
 function Landing() {
   const getContact = useServerFn(getContactWhatsapp);
+  const getMedia = useServerFn(getSiteMedia);
   const { data: contact } = useQuery({
     queryKey: ["contact-whatsapp"],
     queryFn: () => getContact({}),
   });
+  const { data: media } = useQuery({
+    queryKey: ["site-media"],
+    queryFn: () => getMedia({}),
+  });
   const contactNumber = contact?.number ?? "2348132589218";
+  const videoUrl = media?.video_url ?? "";
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* NAV */}
