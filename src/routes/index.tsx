@@ -289,8 +289,10 @@ function ServiceCard({
           {cta}
         </Link>
       </div>
-      </div>
     </motion.div>
+  );
+}
+
   );
 }
 
