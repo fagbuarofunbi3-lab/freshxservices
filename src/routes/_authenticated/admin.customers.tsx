@@ -97,6 +97,14 @@ function AdminCustomers() {
                   >
                     Promo code
                   </button>
+                  <span className="mx-2 text-muted-foreground">·</span>
+                  <button
+                    onClick={() => setReferralFor({ id: c.id, name: c.full_name })}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Referral code
+                  </button>
+
                 </td>
               </tr>
             ))}
