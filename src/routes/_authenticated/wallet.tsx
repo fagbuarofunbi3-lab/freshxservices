@@ -18,7 +18,7 @@ function WalletPage() {
     queryKey: ["wallet-tx"],
     queryFn: () => listTransactions(),
   });
-  const [amount, setAmount] = useState(2000);
+  const [amount, setAmount] = useState<number | "">("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
