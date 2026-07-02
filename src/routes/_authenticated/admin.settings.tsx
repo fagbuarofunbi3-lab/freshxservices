@@ -21,8 +21,8 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 async function uploadFile(
   file: File,
   kind: "video" | "image",
-  signFn: typeof adminCreateSignedMediaUpload,
-  finalizeFn: typeof adminFinalizeMediaUpload,
+  signFn: (args: { data: { kind: "video" | "image"; ext: string } }) => Promise<{ path: string; token: string }>,
+  finalizeFn: (args: { data: { path: string } }) => Promise<{ url: string }>,
 ): Promise<string> {
   const ext = (file.name.split(".").pop() || (kind === "video" ? "mp4" : "jpg")).toLowerCase();
   const { path, token } = await signFn({ data: { kind, ext } });
@@ -33,6 +33,7 @@ async function uploadFile(
   const { url } = await finalizeFn({ data: { path } });
   return url;
 }
+
 
 function AdminSettingsPage() {
   const qc = useQueryClient();
