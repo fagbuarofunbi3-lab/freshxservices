@@ -22,6 +22,7 @@ function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +34,15 @@ function SignUpPage() {
     }
     setLoading(true);
     try {
-      await fn({ data: { full_name: fullName, whatsapp_number: phone, email, password } });
+      await fn({
+        data: {
+          full_name: fullName,
+          whatsapp_number: phone,
+          email,
+          password,
+          referral_code: referralCode.trim() || undefined,
+        },
+      });
       await waitForSessionReady();
       await invalidate();
       await router.invalidate();
@@ -45,6 +54,7 @@ function SignUpPage() {
       setLoading(false);
     }
   }
+
 
   return (
     <AuthShell title="Create your FreshX account" subtitle="Name, WhatsApp number, email and a password.">
