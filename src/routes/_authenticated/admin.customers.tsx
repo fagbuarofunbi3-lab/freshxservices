@@ -21,8 +21,10 @@ function AdminCustomers() {
   const { data } = useQuery({ queryKey: ["admin-customers"], queryFn: () => adminListCustomers() });
   const [adjusting, setAdjusting] = useState<{ id: string; name: string; balance: number } | null>(null);
   const [promoFor, setPromoFor] = useState<{ id: string; name: string } | null>(null);
+  const [referralFor, setReferralFor] = useState<{ id: string; name: string } | null>(null);
   const [amount, setAmount] = useState<string>("");
   const [note, setNote] = useState<string>("");
+
 
   const credit = useMutation({
     mutationFn: (vars: { profile_id: string; amount: number; note?: string }) =>
