@@ -172,6 +172,15 @@ function AdminCustomers() {
           onClose={() => setPromoFor(null)}
         />
       )}
+
+      {referralFor && (
+        <ReferralCodeModal
+          profileId={referralFor.id}
+          name={referralFor.name}
+          onClose={() => setReferralFor(null)}
+        />
+      )}
+
     </div>
   );
 }
