@@ -132,6 +132,7 @@ export type Database = {
           id: string
           language_preference: string
           password_hash: string
+          referred_by_code: string | null
           role: string
           transaction_pin_hash: string | null
           updated_at: string
@@ -145,6 +146,7 @@ export type Database = {
           id?: string
           language_preference?: string
           password_hash: string
+          referred_by_code?: string | null
           role?: string
           transaction_pin_hash?: string | null
           updated_at?: string
@@ -158,6 +160,7 @@ export type Database = {
           id?: string
           language_preference?: string
           password_hash?: string
+          referred_by_code?: string | null
           role?: string
           transaction_pin_hash?: string | null
           updated_at?: string
@@ -209,6 +212,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "promo_codes_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          owner_profile_id: string | null
+          reward_amount: number
+          times_used: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          owner_profile_id?: string | null
+          reward_amount?: number
+          times_used?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          owner_profile_id?: string | null
+          reward_amount?: number
+          times_used?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_owner_profile_id_fkey"
             columns: ["owner_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
