@@ -305,3 +305,121 @@ function PromoCodeModal({
     </div>
   );
 }
+
+function ReferralCodeModal({
+  profileId,
+  name,
+  onClose,
+}: {
+  profileId: string;
+  name: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const { data: existing, isLoading } = useQuery({
+    queryKey: ["admin-customer-referral", profileId],
+    queryFn: () => adminGetCustomerReferral({ data: { owner_profile_id: profileId } }),
+  });
+  const [code, setCode] = useState("");
+  const [reward, setReward] = useState<number>(0);
+  const [isActive, setIsActive] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+
+  if (existing && !hydrated) {
+    setCode(existing.code);
+    setReward(existing.reward_amount);
+    setIsActive(existing.is_active);
+    setHydrated(true);
+  }
+
+  const save = useMutation({
+    mutationFn: (vars: { code: string; reward_amount: number; is_active: boolean }) =>
+      adminUpsertCustomerReferral({
+        data: {
+          owner_profile_id: profileId,
+          code: vars.code,
+          reward_amount: vars.reward_amount,
+          is_active: vars.is_active,
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-customer-referral", profileId] });
+      qc.invalidateQueries({ queryKey: ["admin-referrals"] });
+      toast.success("Referral code saved");
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const suggested = name
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z0-9]/g, ""))
+    .filter(Boolean)
+    .join("")
+    .slice(0, 12)
+    .toUpperCase();
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-lg">
+        <h3 className="font-display text-xl">Referral code for {name}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {existing
+            ? `Used at signup ${existing.times_used} time${existing.times_used === 1 ? "" : "s"}.`
+            : "Give this customer a personal referral code. New users can enter it when they sign up."}
+        </p>
+
+        {isLoading ? (
+          <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <div className="mt-4 space-y-3 text-sm">
+            <label className="block">
+              <span className="text-muted-foreground">Code</span>
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""))}
+                placeholder={suggested || "EG: FUNBIREF"}
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono tracking-wider"
+              />
+            </label>
+            <label className="block">
+              <span className="text-muted-foreground">Reward per signup (₦, optional)</span>
+              <input
+                type="number"
+                min={0}
+                value={reward}
+                onChange={(e) => setReward(Number(e.target.value))}
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                For tracking only. Rewards can be paid manually via wallet adjustment.
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+              />
+              <span>Active</span>
+            </label>
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-md border border-border px-3 py-2 text-sm">
+            Cancel
+          </button>
+          <button
+            disabled={save.isPending || code.length < 3}
+            onClick={() => save.mutate({ code, reward_amount: reward, is_active: isActive })}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Save referral
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
