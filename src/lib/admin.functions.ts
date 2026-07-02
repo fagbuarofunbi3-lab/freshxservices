@@ -477,3 +477,136 @@ export const adminMonthlyReports = createServerFn({ method: "GET" })
 
     return { year, months };
   });
+
+// ============ Referral codes ============
+export const adminListReferralCodes = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("referral_codes")
+    .select("id, code, owner_profile_id, reward_amount, times_used, is_active, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const ownerIds = Array.from(
+    new Set((data ?? []).map((r) => r.owner_profile_id as string | null).filter(Boolean) as string[]),
+  );
+  const { data: owners } = ownerIds.length
+    ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", ownerIds)
+    : { data: [] as Array<{ id: string; full_name: string }> };
+  const omap = new Map((owners ?? []).map((o) => [o.id as string, o.full_name as string]));
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    code: r.code as string,
+    owner_profile_id: (r.owner_profile_id as string | null) ?? null,
+    owner_name: r.owner_profile_id ? omap.get(r.owner_profile_id as string) ?? "—" : null,
+    reward_amount: Number(r.reward_amount ?? 0),
+    times_used: Number(r.times_used ?? 0),
+    is_active: !!r.is_active,
+    created_at: r.created_at as string,
+  }));
+});
+
+export const adminUpsertReferralCode = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        code: z
+          .string()
+          .trim()
+          .min(3)
+          .max(40)
+          .regex(/^[A-Z0-9_-]+$/i, "Use A-Z, 0-9, _ or -"),
+        owner_profile_id: z.string().uuid().nullable().optional(),
+        reward_amount: z.number().min(0).max(1_000_000).default(0),
+        is_active: z.boolean().default(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const patch = {
+      code: data.code.toUpperCase(),
+      owner_profile_id: data.owner_profile_id ?? null,
+      reward_amount: data.reward_amount,
+      is_active: data.is_active,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.id) {
+      const { error } = await supabaseAdmin.from("referral_codes").update(patch).eq("id", data.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("referral_codes").insert(patch);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+export const adminDeleteReferralCode = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { error } = await supabaseAdmin.from("referral_codes").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminGetCustomerReferral = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ owner_profile_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { data: rows } = await supabaseAdmin
+      .from("referral_codes")
+      .select("id, code, reward_amount, is_active, times_used")
+      .eq("owner_profile_id", data.owner_profile_id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const r = rows?.[0];
+    if (!r) return null;
+    return {
+      id: r.id as string,
+      code: r.code as string,
+      reward_amount: Number(r.reward_amount ?? 0),
+      is_active: !!r.is_active,
+      times_used: Number(r.times_used ?? 0),
+    };
+  });
+
+export const adminUpsertCustomerReferral = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        owner_profile_id: z.string().uuid(),
+        code: z.string().trim().min(3).max(40).regex(/^[A-Z0-9_-]+$/i),
+        reward_amount: z.number().min(0).max(1_000_000).default(0),
+        is_active: z.boolean().default(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const code = data.code.toUpperCase();
+    const { data: existing } = await supabaseAdmin
+      .from("referral_codes")
+      .select("id, owner_profile_id")
+      .ilike("code", code)
+      .maybeSingle();
+    if (existing && existing.owner_profile_id && existing.owner_profile_id !== data.owner_profile_id) {
+      throw new Error("That referral code is already assigned to another customer.");
+    }
+    const patch = {
+      code,
+      owner_profile_id: data.owner_profile_id,
+      reward_amount: data.reward_amount,
+      is_active: data.is_active,
+      updated_at: new Date().toISOString(),
+    };
+    if (existing) {
+      const { error } = await supabaseAdmin.from("referral_codes").update(patch).eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("referral_codes").insert(patch);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, code };
+  });
+
