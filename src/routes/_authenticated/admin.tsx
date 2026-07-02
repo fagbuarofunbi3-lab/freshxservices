@@ -16,7 +16,9 @@ const tabs = [
   { to: "/admin/customers", label: "Customers" },
   { to: "/admin/catalog", label: "Catalog" },
   { to: "/admin/promos", label: "Promos" },
+  { to: "/admin/referrals", label: "Referrals" },
   { to: "/admin/settings", label: "Settings" },
+
 ] as const;
 
 function AdminLayout() {
