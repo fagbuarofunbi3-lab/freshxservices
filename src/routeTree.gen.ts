@@ -26,6 +26,7 @@ import { Route as ApiPublicFlutterwaveWebhookRouteImport } from './routes/api/pu
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedOrderNewRouteImport } from './routes/_authenticated/order.new'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
+import { Route as AuthenticatedAdminReferralsRouteImport } from './routes/_authenticated/admin.referrals'
 import { Route as AuthenticatedAdminPromosRouteImport } from './routes/_authenticated/admin.promos'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin.orders'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
@@ -118,6 +119,12 @@ const AuthenticatedAdminSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminReferralsRoute =
+  AuthenticatedAdminReferralsRouteImport.update({
+    id: '/referrals',
+    path: '/referrals',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPromosRoute =
   AuthenticatedAdminPromosRouteImport.update({
     id: '/promos',
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
+  '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
@@ -187,6 +195,7 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
+  '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
@@ -212,6 +221,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/promos': typeof AuthenticatedAdminPromosRoute
+  '/_authenticated/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/order/new': typeof AuthenticatedOrderNewRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/orders'
     | '/admin/promos'
+    | '/admin/referrals'
     | '/admin/settings'
     | '/order/new'
     | '/orders/$id'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/orders'
     | '/admin/promos'
+    | '/admin/referrals'
     | '/admin/settings'
     | '/order/new'
     | '/orders/$id'
@@ -283,6 +295,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/promos'
+    | '/_authenticated/admin/referrals'
     | '/_authenticated/admin/settings'
     | '/_authenticated/order/new'
     | '/_authenticated/orders/$id'
@@ -422,6 +435,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/referrals': {
+      id: '/_authenticated/admin/referrals'
+      path: '/referrals'
+      fullPath: '/admin/referrals'
+      preLoaderRoute: typeof AuthenticatedAdminReferralsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/promos': {
       id: '/_authenticated/admin/promos'
       path: '/promos'
@@ -465,6 +485,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminPromosRoute: typeof AuthenticatedAdminPromosRoute
+  AuthenticatedAdminReferralsRoute: typeof AuthenticatedAdminReferralsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -474,6 +495,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
   AuthenticatedAdminPromosRoute: AuthenticatedAdminPromosRoute,
+  AuthenticatedAdminReferralsRoute: AuthenticatedAdminReferralsRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
