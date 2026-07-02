@@ -22,6 +22,7 @@ function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +34,15 @@ function SignUpPage() {
     }
     setLoading(true);
     try {
-      await fn({ data: { full_name: fullName, whatsapp_number: phone, email, password } });
+      await fn({
+        data: {
+          full_name: fullName,
+          whatsapp_number: phone,
+          email,
+          password,
+          referral_code: referralCode.trim() || undefined,
+        },
+      });
       await waitForSessionReady();
       await invalidate();
       await router.invalidate();
@@ -45,6 +54,7 @@ function SignUpPage() {
       setLoading(false);
     }
   }
+
 
   return (
     <AuthShell title="Create your FreshX account" subtitle="Name, WhatsApp number, email and a password.">
@@ -93,6 +103,16 @@ function SignUpPage() {
         <Field label="Confirm password">
           <PasswordInput value={confirm} onChange={setConfirm} show={showPw} onToggle={() => setShowPw((s) => !s)} />
         </Field>
+        <Field label="Referral code (optional)">
+          <input
+            value={referralCode}
+            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+            maxLength={40}
+            className="w-full rounded-md border border-input bg-background px-3 py-2.5 font-mono text-sm tracking-wider outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="Got a code? Enter it here"
+          />
+        </Field>
+
         <button
           type="submit"
           disabled={loading}

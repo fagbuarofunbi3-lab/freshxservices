@@ -1,19 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ImageIcon, Phone, Video } from "lucide-react";
+import { ImageIcon, Phone, Video, Upload, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getContactWhatsapp,
   adminUpdateContactWhatsapp,
   getSiteMedia,
   adminUpdateSiteMedia,
+  adminCreateSignedMediaUpload,
+  adminFinalizeMediaUpload,
 } from "@/lib/site-settings.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: AdminSettingsPage,
 });
+
+async function uploadFile(
+  file: File,
+  kind: "video" | "image",
+  signFn: (args: { data: { kind: "video" | "image"; ext: string } }) => Promise<{ path: string; token: string }>,
+  finalizeFn: (args: { data: { path: string } }) => Promise<{ url: string }>,
+): Promise<string> {
+  const ext = (file.name.split(".").pop() || (kind === "video" ? "mp4" : "jpg")).toLowerCase();
+  const { path, token } = await signFn({ data: { kind, ext } });
+  const { error } = await supabase.storage.from("site-media").uploadToSignedUrl(path, token, file, {
+    contentType: file.type || undefined,
+  });
+  if (error) throw new Error(error.message);
+  const { url } = await finalizeFn({ data: { path } });
+  return url;
+}
+
 
 function AdminSettingsPage() {
   const qc = useQueryClient();
@@ -21,6 +41,8 @@ function AdminSettingsPage() {
   const updateContact = useServerFn(adminUpdateContactWhatsapp);
   const getMedia = useServerFn(getSiteMedia);
   const updateMedia = useServerFn(adminUpdateSiteMedia);
+  const signUpload = useServerFn(adminCreateSignedMediaUpload);
+  const finalizeUpload = useServerFn(adminFinalizeMediaUpload);
 
   const { data: contact } = useQuery({
     queryKey: ["contact-whatsapp"],
@@ -36,6 +58,10 @@ function AdminSettingsPage() {
   const [videoUrl, setVideoUrl] = useState("");
   const [images, setImages] = useState<string[]>(["", "", "", ""]);
   const [savingMedia, setSavingMedia] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingImageIdx, setUploadingImageIdx] = useState<number | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const imageRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     if (contact?.number) setNumber(contact.number);
@@ -65,24 +91,76 @@ function AdminSettingsPage() {
     }
   }
 
+  async function persistMedia(nextVideo: string, nextImages: string[]) {
+    const cleaned = nextImages.map((s) => s.trim()).filter(Boolean);
+    const res = await updateMedia({
+      data: { video_url: nextVideo.trim(), images: cleaned },
+    });
+    setVideoUrl(res.video_url);
+    const list = [...res.images];
+    while (list.length < 4) list.push("");
+    setImages(list.slice(0, 4));
+    await qc.invalidateQueries({ queryKey: ["site-media"] });
+  }
+
   async function saveMedia() {
     setSavingMedia(true);
     try {
-      const cleaned = images.map((s) => s.trim()).filter(Boolean);
-      const res = await updateMedia({
-        data: { video_url: videoUrl.trim(), images: cleaned },
-      });
-      toast.success("Media updated");
-      setVideoUrl(res.video_url);
-      const list = [...res.images];
-      while (list.length < 4) list.push("");
-      setImages(list.slice(0, 4));
-      await qc.invalidateQueries({ queryKey: ["site-media"] });
+      await persistMedia(videoUrl, images);
+      toast.success("Media saved");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
     } finally {
       setSavingMedia(false);
     }
+  }
+
+  async function onPickVideo(file: File) {
+    if (file.size > 100 * 1024 * 1024) {
+      return toast.error("Video must be under 100MB");
+    }
+    setUploadingVideo(true);
+    try {
+      const url = await uploadFile(file, "video", signUpload, finalizeUpload);
+      setVideoUrl(url);
+      await persistMedia(url, images);
+      toast.success("Video uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingVideo(false);
+    }
+  }
+
+  async function onPickImage(idx: number, file: File) {
+    if (file.size > 10 * 1024 * 1024) {
+      return toast.error("Image must be under 10MB");
+    }
+    setUploadingImageIdx(idx);
+    try {
+      const url = await uploadFile(file, "image", signUpload, finalizeUpload);
+      const next = [...images];
+      next[idx] = url;
+      setImages(next);
+      await persistMedia(videoUrl, next);
+      toast.success("Image uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingImageIdx(null);
+    }
+  }
+
+  async function clearVideo() {
+    setVideoUrl("");
+    await persistMedia("", images);
+  }
+
+  async function clearImage(idx: number) {
+    const next = [...images];
+    next[idx] = "";
+    setImages(next);
+    await persistMedia(videoUrl, next);
   }
 
   return (
@@ -100,8 +178,7 @@ function AdminSettingsPage() {
           <Phone className="h-4 w-4 text-primary" /> Contact Us WhatsApp number
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Used by the floating "Contact us" button and the homepage footer. International
-          (2348132589218) or local (081...) format both work.
+          Used by the floating "Contact us" button and the homepage footer.
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <input
@@ -125,60 +202,111 @@ function AdminSettingsPage() {
         )}
       </section>
 
-      {/* Homepage video */}
+      {/* Homepage video — file upload */}
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Video className="h-4 w-4 text-primary" /> Homepage promo video
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Shown to visitors before login, above the "Available balance" preview. Paste a direct
-          MP4/WebM URL or a YouTube link. Leave blank for a placeholder.
+          Shown to visitors before login. Upload an MP4 or WebM from your device (up to 100MB).
         </p>
-        <input
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder="https://youtube.com/watch?v=... or https://.../promo.mp4"
-          className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPickVideo(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => videoInputRef.current?.click()}
+            disabled={uploadingVideo}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" />
+            {uploadingVideo ? "Uploading…" : videoUrl ? "Replace video" : "Upload video"}
+          </button>
+          {videoUrl && (
+            <button
+              type="button"
+              onClick={clearVideo}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-destructive hover:bg-muted"
+            >
+              <X className="h-4 w-4" /> Remove
+            </button>
+          )}
+        </div>
+
+        {videoUrl && (
+          <video
+            key={videoUrl}
+            src={videoUrl}
+            controls
+            className="mt-4 w-full max-w-md rounded-md border border-border bg-black"
+          />
+        )}
       </section>
 
-      {/* Dashboard carousel */}
+      {/* Dashboard carousel — file upload */}
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <ImageIcon className="h-4 w-4 text-primary" /> Dashboard picture strip
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Up to 4 images shown as a rolling strip on every user's dashboard, between their
-          current order and recent orders. Leave a slot blank to remove it.
+          Up to 4 images that scroll on every user's dashboard. Upload each from your device
+          (up to 10MB each).
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {images.map((val, i) => (
-            <div key={i} className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                Picture {i + 1}
-              </label>
+            <div key={i} className="rounded-md border border-border p-3">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="font-medium text-muted-foreground">Picture {i + 1}</span>
+                {val && (
+                  <button
+                    onClick={() => clearImage(i)}
+                    className="inline-flex items-center gap-1 text-destructive hover:underline"
+                  >
+                    <X className="h-3.5 w-3.5" /> Remove
+                  </button>
+                )}
+              </div>
+              <div className="relative h-32 w-full overflow-hidden rounded-md bg-muted">
+                {val ? (
+                  <img src={val} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                    Empty slot
+                  </div>
+                )}
+              </div>
               <input
-                value={val}
-                onChange={(e) => {
-                  const next = [...images];
-                  next[i] = e.target.value;
-                  setImages(next);
+                ref={(el) => {
+                  imageRefs.current[i] = el;
                 }}
-                placeholder="https://.../image.jpg"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onPickImage(i, f);
+                  e.target.value = "";
+                }}
               />
-              {val.trim() && (
-                <div className="relative h-24 w-full overflow-hidden rounded-md bg-muted">
-                  <img
-                    src={val.trim()}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => imageRefs.current[i]?.click()}
+                disabled={uploadingImageIdx === i}
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {uploadingImageIdx === i ? "Uploading…" : val ? "Replace" : "Upload"}
+              </button>
             </div>
           ))}
         </div>
@@ -186,7 +314,7 @@ function AdminSettingsPage() {
           <button
             onClick={saveMedia}
             disabled={savingMedia}
-            className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="rounded-md border border-border px-5 py-2 text-sm font-semibold hover:bg-muted disabled:opacity-50"
           >
             {savingMedia ? "Saving…" : "Save media"}
           </button>

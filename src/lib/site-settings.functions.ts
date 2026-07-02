@@ -94,3 +94,40 @@ export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, video_url: data.video_url.trim(), images: cleanImages };
   });
+
+// ---------- File uploads (video / images) ----------
+const SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 year
+
+export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        kind: z.enum(["video", "image"]),
+        ext: z.string().trim().min(1).max(8).regex(/^[a-z0-9]+$/i),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const safeExt = data.ext.toLowerCase();
+    const path = `${data.kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+    const { data: signed, error } = await supabaseAdmin
+      .storage
+      .from("site-media")
+      .createSignedUploadUrl(path);
+    if (error || !signed) throw new Error(error?.message ?? "Could not create upload URL");
+    return { path: signed.path, token: signed.token };
+  });
+
+export const adminFinalizeMediaUpload = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ path: z.string().trim().min(1).max(300) }).parse(input))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { data: signed, error } = await supabaseAdmin
+      .storage
+      .from("site-media")
+      .createSignedUrl(data.path, SIGNED_URL_TTL);
+    if (error || !signed) throw new Error(error?.message ?? "Could not sign media URL");
+    return { url: signed.signedUrl };
+  });
+

@@ -51,6 +51,12 @@ export const signUp = createServerFn({ method: "POST" })
         whatsapp_number: PhoneSchema,
         email: EmailSchema,
         password: PasswordSchema,
+        referral_code: z
+          .string()
+          .trim()
+          .max(40)
+          .optional()
+          .transform((v) => (v ? v.toUpperCase() : undefined)),
       })
       .parse(input),
   )
@@ -71,6 +77,22 @@ export const signUp = createServerFn({ method: "POST" })
     if (existingEmail.data) {
       throw new Error("An account with this email already exists.");
     }
+
+    // Validate referral code (if provided) but never block signup on it
+    let referredByCode: string | null = null;
+    let referralRowId: string | null = null;
+    if (data.referral_code) {
+      const { data: ref } = await supabaseAdmin
+        .from("referral_codes")
+        .select("id, code, is_active")
+        .ilike("code", data.referral_code)
+        .maybeSingle();
+      if (ref && ref.is_active) {
+        referredByCode = ref.code as string;
+        referralRowId = ref.id as string;
+      }
+    }
+
     const password_hash = await hashPassword(data.password);
     const { data: created, error } = await supabaseAdmin
       .from("profiles")
@@ -79,15 +101,35 @@ export const signUp = createServerFn({ method: "POST" })
         whatsapp_number: data.whatsapp_number,
         email: data.email,
         password_hash,
+        referred_by_code: referredByCode,
       })
       .select("id")
       .single();
     if (error || !created) throw new Error(error?.message ?? "Could not create account");
 
+    if (referralRowId) {
+      await supabaseAdmin.rpc("increment_referral_use" as never, { _id: referralRowId } as never).then(
+        () => undefined,
+        async () => {
+          // Fallback if RPC doesn't exist yet — do a manual increment
+          const { data: cur } = await supabaseAdmin
+            .from("referral_codes")
+            .select("times_used")
+            .eq("id", referralRowId!)
+            .maybeSingle();
+          await supabaseAdmin
+            .from("referral_codes")
+            .update({ times_used: Number(cur?.times_used ?? 0) + 1 })
+            .eq("id", referralRowId!);
+        },
+      );
+    }
+
     const session = await getFreshXSession();
     await session.update({ profileId: created.id });
     return { ok: true };
   });
+
 
 export const logIn = createServerFn({ method: "POST" })
   .inputValidator((input) =>

@@ -18,17 +18,18 @@ function WalletPage() {
     queryKey: ["wallet-tx"],
     queryFn: () => listTransactions(),
   });
-  const [amount, setAmount] = useState(2000);
+  const [amount, setAmount] = useState<number | "">("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function onTopUp() {
-    if (amount < 500) return toast.error("Minimum top-up is ₦500");
+    const amt = typeof amount === "number" ? amount : Number(amount);
+    if (!amt || amt < 500) return toast.error("Minimum top-up is ₦500");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return toast.error("Enter the email to receive your payment receipt");
     setLoading(true);
     try {
-      const res = await initTopUp({ data: { amount, email } });
+      const res = await initTopUp({ data: { amount: amt, email } });
       await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
       window.location.href = res.payment_link;
     } catch (err) {
@@ -66,10 +67,15 @@ function WalletPage() {
             type="number"
             min={500}
             value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            onChange={(e) => {
+              const v = e.target.value;
+              setAmount(v === "" ? "" : Number(v));
+            }}
+            placeholder="Enter amount"
+            className="w-36 rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
+
 
         <div className="mt-4">
           <label className="block text-sm">
