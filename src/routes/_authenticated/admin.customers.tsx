@@ -7,8 +7,11 @@ import {
   adminGetCustomerPromo,
   adminListCustomers,
   adminUpsertCustomerPromo,
+  adminGetCustomerReferral,
+  adminUpsertCustomerReferral,
 } from "@/lib/admin.functions";
 import { naira } from "@/lib/format";
+
 
 export const Route = createFileRoute("/_authenticated/admin/customers")({ component: AdminCustomers });
 
