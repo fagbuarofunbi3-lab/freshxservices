@@ -169,7 +169,7 @@ export const createOrder = createServerFn({ method: "POST" })
     // Wallet check
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("wallet_balance, full_name")
+      .select("wallet_balance, full_name, whatsapp_number")
       .eq("id", profileId)
       .single();
     const balance = Number(profile?.wallet_balance ?? 0);
