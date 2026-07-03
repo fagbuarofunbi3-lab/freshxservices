@@ -48,6 +48,10 @@ function LeaderboardPage() {
                 </span>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
+                {data.you.active_users_this_month} of them used a service this month ·{" "}
+                {data.you.active_users_total} active all-time
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
                 Your code: <span className="font-mono text-foreground">{data.you.code}</span>
               </div>
             </div>
@@ -89,7 +93,9 @@ function LeaderboardPage() {
                     )}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {e.total_signups} total sign-up{e.total_signups === 1 ? "" : "s"}
+                    {e.total_signups} total sign-up{e.total_signups === 1 ? "" : "s"} ·{" "}
+                    {e.active_users_this_month} used a service this month
+                    <span className="hidden sm:inline"> · {e.active_users_total} active all-time</span>
                   </div>
                 </div>
                 <div className="text-right">

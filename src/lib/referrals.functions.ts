@@ -14,6 +14,8 @@ export type LeaderboardEntry = {
   owner_name: string;
   signups_this_month: number;
   total_signups: number;
+  active_users_this_month: number;
+  active_users_total: number;
   is_you: boolean;
   rank: number;
 };
@@ -54,38 +56,78 @@ export const getReferralLeaderboard = createServerFn({ method: "GET" }).handler(
       : { data: [] as Array<{ id: string; full_name: string }> };
     const ownerName = new Map((owners ?? []).map((o) => [o.id as string, (o.full_name as string) ?? "Ambassador"]));
 
-    // Count signups in this month per code (uses profiles.referred_by_code)
+    // All profiles referred by any assigned code — used for both sign-up counts
+    // and to figure out which referred users have actually placed an order.
     const codeStrings = (codes ?? []).map((c) => (c.code as string).toUpperCase());
     const monthCounts = new Map<string, number>();
+    const totalReferredByCode = new Map<string, string[]>(); // code -> profile ids (all-time)
+    const monthReferredByCode = new Map<string, string[]>(); // code -> profile ids (this month)
+
     if (codeStrings.length) {
-      const { data: newSignups } = await supabaseAdmin
+      const { data: referred } = await supabaseAdmin
         .from("profiles")
-        .select("referred_by_code")
-        .gte("created_at", start.toISOString())
-        .lt("created_at", end.toISOString())
+        .select("id, referred_by_code, created_at")
         .not("referred_by_code", "is", null);
-      for (const row of newSignups ?? []) {
+
+      const monthStart = start.getTime();
+      const monthEnd = end.getTime();
+      for (const row of referred ?? []) {
         const raw = (row.referred_by_code as string | null) ?? null;
         if (!raw) continue;
         const key = raw.toUpperCase();
-        monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
+        const pid = row.id as string;
+        const created = row.created_at ? new Date(row.created_at as string).getTime() : 0;
+
+        const totalList = totalReferredByCode.get(key) ?? [];
+        totalList.push(pid);
+        totalReferredByCode.set(key, totalList);
+
+        if (created >= monthStart && created < monthEnd) {
+          monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
+          const monthList = monthReferredByCode.get(key) ?? [];
+          monthList.push(pid);
+          monthReferredByCode.set(key, monthList);
+        }
       }
+    }
+
+    // Distinct profile_ids that have placed at least one order — among all
+    // referred users. Used to compute "active users" per referral code.
+    const allReferredIds = Array.from(
+      new Set(
+        Array.from(totalReferredByCode.values()).flat(),
+      ),
+    );
+    const orderingIds = new Set<string>();
+    if (allReferredIds.length) {
+      const { data: orderRows } = await supabaseAdmin
+        .from("orders")
+        .select("profile_id")
+        .in("profile_id", allReferredIds);
+      for (const r of orderRows ?? []) orderingIds.add(r.profile_id as string);
     }
 
     const rows = (codes ?? [])
       .map((c) => {
         const codeUpper = (c.code as string).toUpperCase();
         const owner_id = c.owner_profile_id as string;
+        const totalIds = totalReferredByCode.get(codeUpper) ?? [];
+        const monthIds = monthReferredByCode.get(codeUpper) ?? [];
+        const active_users_total = totalIds.filter((id) => orderingIds.has(id)).length;
+        const active_users_this_month = monthIds.filter((id) => orderingIds.has(id)).length;
         return {
           code: c.code as string,
           owner_name: ownerName.get(owner_id) ?? "Ambassador",
           owner_id,
           signups_this_month: monthCounts.get(codeUpper) ?? 0,
           total_signups: Number(c.times_used ?? 0),
+          active_users_this_month,
+          active_users_total,
         };
       })
       .sort((a, b) =>
         b.signups_this_month - a.signups_this_month ||
+        b.active_users_this_month - a.active_users_this_month ||
         b.total_signups - a.total_signups ||
         a.owner_name.localeCompare(b.owner_name),
       );
@@ -95,6 +137,8 @@ export const getReferralLeaderboard = createServerFn({ method: "GET" }).handler(
       owner_name: r.owner_name,
       signups_this_month: r.signups_this_month,
       total_signups: r.total_signups,
+      active_users_this_month: r.active_users_this_month,
+      active_users_total: r.active_users_total,
       is_you: r.owner_id === profileId,
       rank: i + 1,
     }));
