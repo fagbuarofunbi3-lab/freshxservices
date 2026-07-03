@@ -93,7 +93,9 @@ function LeaderboardPage() {
                     )}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {e.total_signups} total sign-up{e.total_signups === 1 ? "" : "s"}
+                    {e.total_signups} total sign-up{e.total_signups === 1 ? "" : "s"} ·{" "}
+                    {e.active_users_this_month} used a service this month
+                    <span className="hidden sm:inline"> · {e.active_users_total} active all-time</span>
                   </div>
                 </div>
                 <div className="text-right">
