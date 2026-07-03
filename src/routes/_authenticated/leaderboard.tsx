@@ -48,6 +48,10 @@ function LeaderboardPage() {
                 </span>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
+                {data.you.active_users_this_month} of them used a service this month ·{" "}
+                {data.you.active_users_total} active all-time
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
                 Your code: <span className="font-mono text-foreground">{data.you.code}</span>
               </div>
             </div>
