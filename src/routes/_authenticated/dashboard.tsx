@@ -166,6 +166,27 @@ function DashboardPage() {
       {/* Rolling picture strip — admin editable in Settings */}
       <ImageCarousel images={media?.images ?? []} />
 
+      {/* Referral Challenge entry */}
+      <Link
+        to="/leaderboard"
+        className="group relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary-soft to-background p-5 transition hover:border-primary/50"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Trophy className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="font-display text-base leading-tight">Referral Challenge</div>
+            <div className="text-xs text-muted-foreground">
+              See who's leading this month's ambassador leaderboard.
+            </div>
+          </div>
+        </div>
+        <ArrowRight className="h-4 w-4 text-primary transition group-hover:translate-x-0.5" />
+      </Link>
+
+
+
       {/* Recent orders */}
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center justify-between">
