@@ -289,7 +289,7 @@ export const createOrder = createServerFn({ method: "POST" })
         serviceType: "laundry",
         orderRef: `FX-${(order.id as string).slice(0, 8).toUpperCase()}`,
         customerName: profile?.full_name ?? "Customer",
-        customerWhatsapp: "—",
+        customerWhatsapp: (profile as { whatsapp_number?: string | null } | null)?.whatsapp_number ?? "—",
         items,
         subtotal,
         deliveryFee,
