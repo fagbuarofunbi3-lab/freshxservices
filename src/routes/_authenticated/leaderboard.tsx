@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Medal, Sparkles, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { Trophy, Medal, Sparkles, ArrowLeft, Copy, Share2, Check } from "lucide-react";
+import { toast } from "sonner";
 import { getReferralLeaderboard } from "@/lib/referrals.functions";
+
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
   component: LeaderboardPage,
