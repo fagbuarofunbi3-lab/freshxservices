@@ -1,46 +1,51 @@
 ## Goal
 
-1. Require a password on signup and login (in addition to WhatsApp number + name).
-2. Fix the bug where logging in does not show the dashboard.
+Make FreshX the "partner company" step in TrustBridge Nigeria's referral game. TrustBridge is where the game starts and ends; FreshX just needs to (1) give each ambassador a real, shareable referral URL to paste back into TrustBridge, and (2) count signups/orders that come through it. No webhook to TrustBridge for now.
 
-## 1. Password support
+## What changes on FreshX
 
-Database (migration):
-- Add `password_hash TEXT NOT NULL` column to `profiles`.
-- Use `pgcrypto` extension and `crypt()` / `gen_salt('bf')` (bcrypt) to hash and verify passwords on the server side via the admin client. No plaintext passwords ever stored or logged.
-- Minimum length: 8 chars. No max email-style complexity rules (Nigerian-market friendly).
+### 1. Public referral landing page `/r/[code]`
 
-Server functions (`src/lib/auth.functions.ts`):
-- `signUp` now takes `{ full_name, whatsapp_number, password }`. Inserts profile with `password_hash = crypt(password, gen_salt('bf'))`.
-- `logIn` now takes `{ whatsapp_number, password }`. Looks up profile and verifies with `password_hash = crypt(password, password_hash)`. Generic error message on failure ("Invalid WhatsApp number or password") to avoid user enumeration.
-- `updateProfile` gets an optional `new_password` field so users can change their password from Settings later (Phase 1: just add to the server fn; the Settings UI can be wired in a follow-up if you want).
+- New public route `src/routes/r.$code.tsx` (SSR, no auth gate).
+- Loader looks up `referral_codes` by code (case-insensitive, `is_active = true`) using the server publishable client + a narrow `TO anon` SELECT policy on `referral_codes` for `code, is_active` only (no owner PII).
+- If code is invalid/inactive → still render the page, but treat as "no code" (don't block signup).
+- Page shows: FreshX intro, what the user gets, and a single big **"Sign up on FreshX"** CTA that navigates to `/signup?ref=CODE`.
+- `head()` sets route-specific title/description/OG so WhatsApp previews look right.
+- Mobile-first layout (this is the whole point — links open in WhatsApp browser).
 
-UI:
-- `src/routes/signup.tsx`: add a Password field (type=password, min 8) and a "Show password" toggle.
-- `src/routes/login.tsx`: add a Password field with the same toggle.
-- Both forms get a subtle "Use at least 8 characters" hint.
+### 2. Signup prefill from `?ref=`
 
-## 2. Dashboard-after-login fix
+- `src/routes/signup.tsx`: read `?ref=` on mount, uppercase it, and prefill the existing "Referral code" field. Field stays editable.
+- No other signup logic changes — existing `signUp` server fn already accepts `referral_code` and increments `times_used`.
 
-Root cause: `login` / `signup` call `useInvalidateMe()` which only invalidates the `useMe` React Query cache. But `/_authenticated.beforeLoad` calls `getMe()` directly, and TanStack Router caches that result for the current match. When `navigate({ to: "/dashboard" })` fires, the router does not re-run `beforeLoad`, sees the cached `null`, and redirects back to `/login` (or shows a flash and stays put).
+### 3. "Share your link" surface for ambassadors
 
-Fix:
-- After successful `signUp` / `logIn`, also call `router.invalidate()` (from `useRouter()`) before navigating. This forces `beforeLoad` to re-run with the freshly-set session cookie.
-- Apply the same fix in `logOut` so signing out properly clears protected route state.
+The user pastes their FreshX link into TrustBridge, so they need to copy it easily.
 
-## Files changed
+- On the existing **Referral Challenge / Leaderboard** page (`src/routes/_authenticated/leaderboard.tsx`) and/or the ambassador dashboard section, add a "Your FreshX referral link" block for signed-in users who own a referral code:
+  - Show `https://freshxservices.com.ng/r/CODE`
+  - Copy button + native Share button (`navigator.share`) with prefilled WhatsApp text.
+- Users without an admin-assigned code see a short note: "Ask admin to assign you a referral code to join the challenge."
 
-- `supabase/migrations/<new>.sql` — add `pgcrypto`, add `password_hash` column.
-- `src/lib/auth.functions.ts` — password hashing + verification, schema updates.
-- `src/routes/signup.tsx` — password field, router invalidate.
-- `src/routes/login.tsx` — password field, router invalidate.
-- `src/routes/_authenticated.tsx` — router invalidate on logout.
+### 4. Nothing changes for admin
 
-## Out of scope (for this turn)
+- Admin section stays as-is. No TrustBridge tab, no webhook UI. (Skip webhook per user's answer.)
 
-- Password reset flow (no email/SMS configured yet — would need OTP via WhatsApp later).
-- Settings UI for changing password (server fn will support it; UI can come next).
+## The FreshX-side Lovable prompt (deliverable to paste into TrustBridge convo / keep for reference)
 
-## Existing accounts
+> **FreshX referral-link support for the TrustBridge Nigeria game**
+>
+> On FreshX (freshxservices.com.ng), add a public referral landing page at `/r/[code]` that anyone can open from a WhatsApp-shared link. The page shows a short FreshX intro and one big "Sign up on FreshX" button. Clicking it goes to `/signup?ref=[code]`, which prefills the existing Referral code field so the new signup is credited to the ambassador who owns that code. If the code is missing or inactive, still let them sign up normally without a code.
+>
+> Every FreshX user who has been assigned a referral code by admin should see their personal shareable link `https://freshxservices.com.ng/r/[their code]` on the Referral Challenge page, with Copy and Share (WhatsApp) buttons. This is the link they paste into TrustBridge's Game Instructions page so TrustBridge can wrap it as `trustbridge.com.ng/g/[their trustbridge code]`.
+>
+> The existing FreshX referral tracking (times used, monthly signups, active users who placed an order) already powers the leaderboard, so no extra counters are needed. Do not add any TrustBridge webhook or cross-site callback for now. Keep the whole flow mobile-first since users open these links inside WhatsApp.
+>
+> Do not touch admin screens, order flow, wallet, or any other feature.
 
-The migration adds `password_hash` as NOT NULL with a placeholder for any existing rows. Since this is still pre-launch and accounts were test-only, the safest move is to wipe existing `profiles` rows in the same migration so everyone re-signs-up with a password. Confirm if you'd rather keep them and force a reset instead.
+## Technical notes
+
+- New file: `src/routes/r.$code.tsx` (public, SSR).
+- Edited: `src/routes/signup.tsx` (read `?ref=`), `src/routes/_authenticated/leaderboard.tsx` (share block).
+- Migration: add `TO anon` SELECT policy on `referral_codes` limited to `code, is_active` (or add a small `getPublicReferralCode` server fn using the publishable-key client so we don't widen anon reads).
+- No changes to `referrals.functions.ts`, orders, admin, or auth middleware.

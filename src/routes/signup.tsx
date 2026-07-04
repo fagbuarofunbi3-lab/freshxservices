@@ -6,7 +6,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { signUp } from "@/lib/auth.functions";
 import { useInvalidateMe } from "./__root";
 
-export const Route = createFileRoute("/signup")({ component: SignUpPage });
+export const Route = createFileRoute("/signup")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    ref: typeof search.ref === "string" ? search.ref : undefined,
+  }),
+  component: SignUpPage,
+});
 
 function waitForSessionReady() {
   return new Promise((resolve) => setTimeout(resolve, 120));
@@ -17,14 +22,18 @@ function SignUpPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const invalidate = useInvalidateMe();
+  const { ref } = Route.useSearch();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [referralCode, setReferralCode] = useState(
+    (ref ?? "").toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40),
+  );
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
