@@ -66,6 +66,10 @@ function LeaderboardPage() {
         </div>
       </section>
 
+      {data?.you ? <ShareLinkCard code={data.you.code} /> : null}
+
+
+
       <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg">Leaderboard</h2>
