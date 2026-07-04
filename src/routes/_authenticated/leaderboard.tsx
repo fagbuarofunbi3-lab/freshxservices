@@ -118,6 +118,67 @@ function LeaderboardPage() {
   );
 }
 
+function ShareLinkCard({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "https://freshxservices.com.ng";
+  const url = `${origin}/r/${code}`;
+  const shareText = `Get fresh laundry & cleaning delivered by FreshX. Sign up with my code ${code}: ${url}`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Link copied");
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error("Couldn't copy — long-press the link to copy");
+    }
+  }
+
+  async function share() {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await navigator.share({ title: "FreshX", text: shareText, url });
+        return;
+      } catch {
+        // user cancelled — fall through to WhatsApp
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
+  }
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+      <div className="flex items-center gap-2">
+        <Share2 className="h-4 w-4 text-primary" />
+        <h2 className="font-display text-lg">Your FreshX referral link</h2>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Share this link on WhatsApp. Every friend who signs up counts toward your rank.
+      </p>
+      <div className="mt-3 flex items-stretch overflow-hidden rounded-md border border-border bg-background">
+        <div className="min-w-0 flex-1 truncate px-3 py-2.5 font-mono text-xs">{url}</div>
+        <button
+          onClick={copy}
+          className="flex items-center gap-1 border-l border-border bg-muted/50 px-3 text-xs font-medium hover:bg-muted"
+          aria-label="Copy link"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <button
+        onClick={share}
+        className="mt-3 w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+      >
+        Share on WhatsApp
+      </button>
+    </section>
+  );
+}
+
+
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) {
     return (
