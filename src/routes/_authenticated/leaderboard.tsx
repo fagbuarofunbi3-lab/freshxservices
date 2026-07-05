@@ -68,10 +68,25 @@ function LeaderboardPage() {
               </div>
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-dashed border-border bg-background/70 p-4 text-sm text-muted-foreground">
-              You don't have a referral code yet. Ask the admin to assign one so you can join the challenge.
+            <div className="mt-4 rounded-xl border border-dashed border-primary/40 bg-background/70 p-4">
+              <div className="text-sm text-muted-foreground">
+                You don't have a referral link yet. Generate yours in one tap and start inviting friends.
+              </div>
+              <button
+                onClick={() => generate.mutate()}
+                disabled={generate.isPending}
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
+              >
+                <Wand2 className="h-4 w-4" />
+                {generate.isPending ? "Generating…" : "Generate my referral link"}
+              </button>
             </div>
           )}
+        </div>
+      </section>
+
+      {data?.you ? <ShareLinkCard code={data.you.code} /> : null}
+
         </div>
       </section>
 
