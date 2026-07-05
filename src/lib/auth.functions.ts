@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getWebRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getFreshXSession } from "@/lib/session.server";
+import { signPinResetToken, verifyPinResetToken } from "@/lib/pin-reset.server";
+import { sendPinResetEmail } from "@/lib/email.server";
 
 const PhoneSchema = z
   .string()
