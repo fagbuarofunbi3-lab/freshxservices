@@ -49,14 +49,12 @@ function Landing() {
 
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="freshx-blob" style={{ background: "var(--color-primary)", width: 480, height: 480, top: -120, left: -120 }} />
-        <div className="freshx-blob" style={{ background: "var(--color-primary-soft)", width: 600, height: 600, top: 60, right: -180, opacity: 0.7 }} />
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-28">
           <div>
-            <h1 className="font-display text-5xl leading-[1.05] tracking-tight md:text-6xl">
+            <h1 className="font-display text-5xl leading-[1.05] tracking-tight text-foreground md:text-6xl">
               Laundry & Cleaning. <span className="text-primary">Done Fresh.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-lg text-muted-foreground">
+            <p className="mt-5 max-w-lg text-lg text-foreground/80">
               Drop your clothes, book a clean — FreshX handles the rest. Pre-paid wallet, real-time tracking, and updates straight to your WhatsApp.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
