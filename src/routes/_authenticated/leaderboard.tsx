@@ -87,10 +87,7 @@ function LeaderboardPage() {
 
       {data?.you ? <ShareLinkCard code={data.you.code} /> : null}
 
-        </div>
-      </section>
 
-      {data?.you ? <ShareLinkCard code={data.you.code} /> : null}
 
 
 
