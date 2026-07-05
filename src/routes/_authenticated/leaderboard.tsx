@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Trophy, Medal, Sparkles, ArrowLeft, Copy, Share2, Check } from "lucide-react";
+import { Trophy, Medal, Sparkles, ArrowLeft, Copy, Share2, Check, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { getReferralLeaderboard } from "@/lib/referrals.functions";
+import { getReferralLeaderboard, generateMyReferralCode } from "@/lib/referrals.functions";
 
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
