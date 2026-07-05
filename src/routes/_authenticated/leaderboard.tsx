@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Trophy, Medal, Sparkles, ArrowLeft, Copy, Share2, Check } from "lucide-react";
+import { Trophy, Medal, Sparkles, ArrowLeft, Copy, Share2, Check, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { getReferralLeaderboard } from "@/lib/referrals.functions";
+import { getReferralLeaderboard, generateMyReferralCode } from "@/lib/referrals.functions";
 
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
@@ -11,10 +11,19 @@ export const Route = createFileRoute("/_authenticated/leaderboard")({
 });
 
 function LeaderboardPage() {
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["referral-leaderboard"],
     queryFn: () => getReferralLeaderboard(),
     refetchInterval: 30_000,
+  });
+  const generate = useMutation({
+    mutationFn: () => generateMyReferralCode(),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["referral-leaderboard"] });
+      toast.success(res.created ? `Your code ${res.code} is ready!` : `Your code is ${res.code}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
@@ -59,14 +68,26 @@ function LeaderboardPage() {
               </div>
             </div>
           ) : (
-            <div className="mt-4 rounded-xl border border-dashed border-border bg-background/70 p-4 text-sm text-muted-foreground">
-              You don't have a referral code yet. Ask the admin to assign one so you can join the challenge.
+            <div className="mt-4 rounded-xl border border-dashed border-primary/40 bg-background/70 p-4">
+              <div className="text-sm text-muted-foreground">
+                You don't have a referral link yet. Generate yours in one tap and start inviting friends.
+              </div>
+              <button
+                onClick={() => generate.mutate()}
+                disabled={generate.isPending}
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
+              >
+                <Wand2 className="h-4 w-4" />
+                {generate.isPending ? "Generating…" : "Generate my referral link"}
+              </button>
             </div>
           )}
         </div>
       </section>
 
       {data?.you ? <ShareLinkCard code={data.you.code} /> : null}
+
+
 
 
 

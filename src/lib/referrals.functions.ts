@@ -9,6 +9,61 @@ async function requireProfileId(): Promise<string> {
   return id;
 }
 
+// Create a personal referral code for the current signed-in user if they
+// don't have one yet. Idempotent — returns the existing code otherwise.
+export const generateMyReferralCode = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ code: string; created: boolean }> => {
+    const profileId = await requireProfileId();
+
+    const { data: existing } = await supabaseAdmin
+      .from("referral_codes")
+      .select("code")
+      .eq("owner_profile_id", profileId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.code) return { code: existing.code as string, created: false };
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", profileId)
+      .maybeSingle();
+
+    const base = ((profile?.full_name as string | undefined) ?? "FRESH")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 8) || "FRESH";
+
+    const rand = () => Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, "0");
+
+    let code = "";
+    for (let i = 0; i < 8; i++) {
+      const candidate = `${base}${rand()}`;
+      const { data: clash } = await supabaseAdmin
+        .from("referral_codes")
+        .select("id")
+        .ilike("code", candidate)
+        .maybeSingle();
+      if (!clash) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) throw new Error("Could not generate a unique code, please try again");
+
+    const { error } = await supabaseAdmin.from("referral_codes").insert({
+      code,
+      owner_profile_id: profileId,
+      reward_amount: 0,
+      is_active: true,
+    });
+    if (error) throw new Error(error.message);
+    return { code, created: true };
+  },
+);
+
 export type LeaderboardEntry = {
   code: string;
   owner_name: string;
