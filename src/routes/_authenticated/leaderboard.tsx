@@ -11,10 +11,19 @@ export const Route = createFileRoute("/_authenticated/leaderboard")({
 });
 
 function LeaderboardPage() {
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["referral-leaderboard"],
     queryFn: () => getReferralLeaderboard(),
     refetchInterval: 30_000,
+  });
+  const generate = useMutation({
+    mutationFn: () => generateMyReferralCode(),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["referral-leaderboard"] });
+      toast.success(res.created ? `Your code ${res.code} is ready!` : `Your code is ${res.code}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
