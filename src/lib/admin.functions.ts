@@ -493,16 +493,34 @@ export const adminListReferralCodes = createServerFn({ method: "GET" }).handler(
     ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", ownerIds)
     : { data: [] as Array<{ id: string; full_name: string }> };
   const omap = new Map((owners ?? []).map((o) => [o.id as string, o.full_name as string]));
-  return (data ?? []).map((r) => ({
-    id: r.id as string,
-    code: r.code as string,
-    owner_profile_id: (r.owner_profile_id as string | null) ?? null,
-    owner_name: r.owner_profile_id ? omap.get(r.owner_profile_id as string) ?? "—" : null,
-    reward_amount: Number(r.reward_amount ?? 0),
-    times_used: Number(r.times_used ?? 0),
-    is_active: !!r.is_active,
-    created_at: r.created_at as string,
-  }));
+  const codeStrings = (data ?? []).map((r) => (r.code as string).toUpperCase());
+  const usageByCode = new Map<string, number>();
+  if (codeStrings.length) {
+    const { data: referred } = await supabaseAdmin
+      .from("profiles")
+      .select("referred_by_code")
+      .not("referred_by_code", "is", null);
+    for (const row of referred ?? []) {
+      const k = ((row.referred_by_code as string | null) ?? "").toUpperCase();
+      if (!k) continue;
+      usageByCode.set(k, (usageByCode.get(k) ?? 0) + 1);
+    }
+  }
+  return (data ?? []).map((r) => {
+    const codeUpper = (r.code as string).toUpperCase();
+    const actual = usageByCode.get(codeUpper) ?? 0;
+    const stored = Number(r.times_used ?? 0);
+    return {
+      id: r.id as string,
+      code: r.code as string,
+      owner_profile_id: (r.owner_profile_id as string | null) ?? null,
+      owner_name: r.owner_profile_id ? omap.get(r.owner_profile_id as string) ?? "—" : null,
+      reward_amount: Number(r.reward_amount ?? 0),
+      times_used: Math.max(actual, stored),
+      is_active: !!r.is_active,
+      created_at: r.created_at as string,
+    };
+  });
 });
 
 export const adminUpsertReferralCode = createServerFn({ method: "POST" })
