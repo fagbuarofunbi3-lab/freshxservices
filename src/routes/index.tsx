@@ -76,12 +76,7 @@ function Landing() {
           </div>
 
           {/* Floating card mockup */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="relative mx-auto w-full max-w-sm space-y-4"
-          >
+          <div className="relative mx-auto w-full max-w-sm space-y-4">
             {/* Promo video billboard — shown to everyone; blank if admin hasn't set one */}
             <PromoVideo url={videoUrl} />
 
