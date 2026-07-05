@@ -53,28 +53,13 @@ function Landing() {
         <div className="freshx-blob" style={{ background: "var(--color-primary-soft)", width: 600, height: 600, top: 60, right: -180, opacity: 0.7 }} />
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:py-28">
           <div>
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="font-display text-5xl leading-[1.05] tracking-tight md:text-6xl"
-            >
+            <h1 className="font-display text-5xl leading-[1.05] tracking-tight md:text-6xl">
               Laundry & Cleaning. <span className="text-primary">Done Fresh.</span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="mt-5 max-w-lg text-lg text-muted-foreground"
-            >
+            </h1>
+            <p className="mt-5 max-w-lg text-lg text-muted-foreground">
               Drop your clothes, book a clean — FreshX handles the rest. Pre-paid wallet, real-time tracking, and updates straight to your WhatsApp.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-8 flex flex-wrap gap-3"
-            >
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/signup"
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90"
@@ -87,7 +72,7 @@ function Landing() {
               >
                 See How It Works
               </a>
-            </motion.div>
+            </div>
           </div>
 
           {/* Floating card mockup */}
