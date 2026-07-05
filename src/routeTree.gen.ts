@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletVerifyRouteImport } from './routes/wallet-verify'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPinRouteImport } from './routes/reset-pin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -43,6 +44,11 @@ const WalletVerifyRoute = WalletVerifyRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPinRoute = ResetPinRouteImport.update({
+  id: '/reset-pin',
+  path: '/reset-pin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/reset-pin': typeof ResetPinRoute
   '/signup': typeof SignupRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/reset-pin': typeof ResetPinRoute
   '/signup': typeof SignupRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/ambassador': typeof AuthenticatedAmbassadorRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/reset-pin': typeof ResetPinRoute
   '/signup': typeof SignupRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
+    | '/reset-pin'
     | '/signup'
     | '/wallet-verify'
     | '/admin'
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
+    | '/reset-pin'
     | '/signup'
     | '/wallet-verify'
     | '/ambassador'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/forgot-password'
     | '/login'
+    | '/reset-pin'
     | '/signup'
     | '/wallet-verify'
     | '/_authenticated/admin'
@@ -334,6 +346,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  ResetPinRoute: typeof ResetPinRoute
   SignupRoute: typeof SignupRoute
   WalletVerifyRoute: typeof WalletVerifyRoute
   RCodeRoute: typeof RCodeRoute
@@ -354,6 +367,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-pin': {
+      id: '/reset-pin'
+      path: '/reset-pin'
+      fullPath: '/reset-pin'
+      preLoaderRoute: typeof ResetPinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -587,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  ResetPinRoute: ResetPinRoute,
   SignupRoute: SignupRoute,
   WalletVerifyRoute: WalletVerifyRoute,
   RCodeRoute: RCodeRoute,

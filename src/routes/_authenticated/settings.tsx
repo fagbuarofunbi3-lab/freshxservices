@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { setTransactionPin, updateProfile } from "@/lib/auth.functions";
+import { setTransactionPin, updateProfile, requestTransactionPinReset } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { PasswordInput } from "../signup";
 
@@ -124,12 +124,16 @@ function SettingsPage() {
 function TransactionPinSection() {
   const { data: me } = useMe();
   const fn = useServerFn(setTransactionPin);
+  const resetFn = useServerFn(requestTransactionPinReset);
   const invalidate = useInvalidateMe();
   const has = !!me?.has_transaction_pin;
+  const hasEmail = !!me?.email;
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   async function save() {
     if (!/^\d{4}$/.test(next)) return toast.error("PIN must be exactly 4 digits");
@@ -145,6 +149,19 @@ function TransactionPinSection() {
       toast.error(err instanceof Error ? err.message : "Could not save PIN");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function sendReset() {
+    setResetLoading(true);
+    try {
+      const res = await resetFn();
+      setSentTo(res.masked_email);
+      toast.success("Reset link sent. Check your email.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send reset link");
+    } finally {
+      setResetLoading(false);
     }
   }
 
@@ -170,6 +187,35 @@ function TransactionPinSection() {
           {loading ? "Saving…" : has ? "Update PIN" : "Create PIN"}
         </button>
       </div>
+
+      {has && (
+        <div className="mt-6 border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-foreground">Forgot your PIN?</h3>
+          {hasEmail ? (
+            <>
+              <p className="mt-1 text-sm text-muted-foreground">
+                We'll email you a secure link to set a new PIN. The link expires in 30 minutes.
+              </p>
+              <button
+                disabled={resetLoading}
+                onClick={sendReset}
+                className="mt-3 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60"
+              >
+                {resetLoading ? "Sending…" : "Email me a reset link"}
+              </button>
+              {sentTo && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Sent to <span className="font-medium text-foreground">{sentTo}</span>. Check your inbox (and spam).
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Add an email in the Profile section above first — we need it to send you a reset link.
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getFreshXSession } from "@/lib/session.server";
+import { signPinResetToken, verifyPinResetToken } from "@/lib/pin-reset.server";
+import { sendPinResetEmail } from "@/lib/email.server";
 
 const PhoneSchema = z
   .string()
@@ -324,6 +327,76 @@ export const resetPasswordWithEmail = createServerFn({ method: "POST" })
       .from("profiles")
       .update({ password_hash })
       .eq("id", profile.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Forgot transaction PIN — signed-in user requests a reset link via email.
+// Sends a link that includes an HMAC-signed, 30-minute-expiry token.
+export const requestTransactionPinReset = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const session = await getFreshXSession();
+    const profileId = session.data?.profileId;
+    if (!profileId) throw new Error("Not signed in");
+
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const email = (profile as { email?: string | null } | null)?.email ?? null;
+    if (!profile || !email) {
+      throw new Error(
+        "No email is set on your account. Add one in Settings → Profile first, then try again.",
+      );
+    }
+
+    const token = signPinResetToken(profile.id as string);
+
+    // Build an absolute URL to /reset-pin using the request origin.
+    let origin = "https://freshxservices.com.ng";
+    try {
+      const req = getRequest();
+      const url = new URL(req.url);
+      origin = `${url.protocol}//${url.host}`;
+    } catch {
+      // ignore — fallback origin above
+    }
+    const resetUrl = `${origin}/reset-pin?token=${encodeURIComponent(token)}`;
+
+    await sendPinResetEmail({
+      to: email,
+      name: (profile as { full_name?: string | null }).full_name ?? "",
+      resetUrl,
+    });
+
+    // Return a masked email for confirmation UX.
+    const [user, domain] = email.split("@");
+    const maskedUser =
+      user.length <= 2 ? user[0] + "*" : user.slice(0, 2) + "*".repeat(Math.max(1, user.length - 2));
+    return { ok: true, masked_email: `${maskedUser}@${domain}` };
+  },
+);
+
+export const resetTransactionPinWithToken = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        token: z.string().min(10).max(1000),
+        new_pin: PinSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const decoded = verifyPinResetToken(data.token);
+    if (!decoded) throw new Error("This reset link is invalid or has expired. Request a new one.");
+
+    const hash = await hashPassword(data.new_pin);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ transaction_pin_hash: hash })
+      .eq("id", decoded.profileId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

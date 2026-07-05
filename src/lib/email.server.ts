@@ -137,3 +137,47 @@ export async function sendOrderEmailToOwner(payload: OrderEmailPayload): Promise
     console.error("[email] failed to send:", err);
   }
 }
+
+export async function sendPinResetEmail(params: {
+  to: string;
+  name: string;
+  resetUrl: string;
+}): Promise<void> {
+  const from = process.env.RESEND_FROM_EMAIL ?? "FreshX Services <onboarding@resend.dev>";
+  const subject = "Reset your FreshX transaction PIN";
+  const safeName = escapeHtml(params.name || "there");
+  const safeUrl = escapeHtml(params.resetUrl);
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;background:#f6f8fb;padding:24px;">
+      <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e5e7eb;">
+        <h2 style="margin:0 0 12px 0;color:#0f172a;">Reset your transaction PIN</h2>
+        <p style="color:#334155;font-size:14px;line-height:1.55;">Hi ${safeName},</p>
+        <p style="color:#334155;font-size:14px;line-height:1.55;">
+          We got a request to reset the 4-digit transaction PIN on your FreshX Services account.
+          Click the button below to set a new PIN. This link expires in 30 minutes.
+        </p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${safeUrl}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:14px;">Reset transaction PIN</a>
+        </p>
+        <p style="color:#64748b;font-size:12px;line-height:1.55;">
+          If the button doesn't work, copy and paste this link into your browser:<br />
+          <span style="word-break:break-all;color:#0f172a;">${safeUrl}</span>
+        </p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:18px;">
+          Didn't ask for this? You can safely ignore this email — your PIN won't change.
+        </p>
+      </div>
+    </div>`;
+  const text = `Hi ${params.name || "there"},
+
+Reset your FreshX transaction PIN using this link (expires in 30 minutes):
+${params.resetUrl}
+
+If you didn't ask for this, ignore this email.`;
+  try {
+    const res = await client().emails.send({ from, to: params.to, subject, html, text });
+    if (res.error) console.error("[email] pin reset error:", res.error);
+  } catch (err) {
+    console.error("[email] pin reset failed:", err);
+  }
+}
