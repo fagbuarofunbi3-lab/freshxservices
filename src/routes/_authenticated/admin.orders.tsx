@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Download, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, FileSpreadsheet, X } from "lucide-react";
 import { adminListOrders, adminUpdateOrderStatus } from "@/lib/admin.functions";
 import { naira } from "@/lib/format";
 
@@ -16,6 +16,8 @@ const NEXT: Record<string, string[]> = {
   delivered: [],
   cancelled: [],
 };
+
+type AdminOrder = Awaited<ReturnType<typeof adminListOrders>>[number];
 
 type RangeMode = "week" | "month" | "90d" | "6m" | "1y" | "custom";
 const MONTH_NAMES = [
@@ -53,6 +55,7 @@ function AdminOrders() {
   const [monthIdx, setMonthIdx] = useState<number>(now.getMonth());
   const [customStart, setCustomStart] = useState<string>(isoFromDaysAgo(7));
   const [customEnd, setCustomEnd] = useState<string>(todayISO());
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
 
   // Compute the actual [start, end] Date range from the current mode.
   const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
@@ -411,7 +414,15 @@ function AdminOrders() {
             <tbody>
               {data.map((o) => (
                 <tr key={o.id} className="border-t border-border">
-                  <td className="px-4 py-3 font-mono text-xs">FX-{o.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrder(o)}
+                      className="font-mono text-xs font-semibold text-primary underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      FX-{o.id.slice(0, 8).toUpperCase()}
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                     {new Date(o.created_at).toLocaleDateString()}
                     <br />
@@ -450,6 +461,109 @@ function AdminOrders() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-border bg-background p-5 shadow-xl sm:rounded-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-xs font-semibold text-primary">
+                  FX-{selectedOrder.id.slice(0, 8).toUpperCase()}
+                </p>
+                <h2 className="mt-1 font-display text-xl capitalize">
+                  {selectedOrder.service_type} order
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {new Date(selectedOrder.created_at).toLocaleString()}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrder(null)}
+                className="rounded-md border border-border p-2 hover:bg-muted"
+                aria-label="Close order details"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+              <div className="rounded-lg border border-border p-3">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Customer</div>
+                <div className="mt-1 font-medium">{selectedOrder.customer_name}</div>
+                <div className="text-muted-foreground">{selectedOrder.customer_whatsapp}</div>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Status</div>
+                <div className="mt-1 font-medium capitalize">{selectedOrder.status}</div>
+                <div className="text-muted-foreground capitalize">{selectedOrder.delivery_method}</div>
+              </div>
+              {selectedOrder.address && (
+                <div className="rounded-lg border border-border p-3 sm:col-span-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Address</div>
+                  <div className="mt-1">{selectedOrder.address}</div>
+                </div>
+              )}
+              {selectedOrder.special_instructions && (
+                <div className="rounded-lg border border-border p-3 sm:col-span-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Instructions</div>
+                  <div className="mt-1">{selectedOrder.special_instructions}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 overflow-hidden rounded-xl border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">What they ordered</th>
+                    <th className="px-3 py-2 text-center">Qty</th>
+                    <th className="px-3 py-2 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedOrder.items.length ? (
+                    selectedOrder.items.map((item, index) => (
+                      <tr key={`${item.name}-${index}`} className="border-t border-border">
+                        <td className="px-3 py-2">{item.name}</td>
+                        <td className="px-3 py-2 text-center">{item.quantity}</td>
+                        <td className="px-3 py-2 text-right">{naira(item.line_total)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">
+                        No item details saved for this order.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-5 space-y-2 rounded-lg bg-muted/50 p-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <span>Subtotal</span>
+                <span>{naira(selectedOrder.subtotal)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span>Delivery</span>
+                <span>{naira(selectedOrder.delivery_fee)}</span>
+              </div>
+              {selectedOrder.discount_amount > 0 && (
+                <div className="flex justify-between gap-4">
+                  <span>Discount</span>
+                  <span>-{naira(selectedOrder.discount_amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-4 border-t border-border pt-2 font-semibold">
+                <span>Total</span>
+                <span>{naira(selectedOrder.total_amount)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

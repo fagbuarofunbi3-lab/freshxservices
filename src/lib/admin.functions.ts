@@ -80,6 +80,11 @@ export const adminListOrders = createServerFn({ method: "GET" })
         customer_whatsapp: p?.whatsapp_number ?? "—",
         item_count: items.length,
         items_summary: items.map((i) => `${i.name} ×${i.quantity}`).join(", "),
+        items: items.map((i) => ({
+          name: i.name,
+          quantity: Number(i.quantity),
+          line_total: Number(i.line_total),
+        })),
       };
     });
   });
