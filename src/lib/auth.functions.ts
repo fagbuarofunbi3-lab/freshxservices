@@ -4,7 +4,8 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getFreshXSession } from "@/lib/session.server";
 import { signPinResetToken, verifyPinResetToken } from "@/lib/pin-reset.server";
-import { sendPinResetEmail } from "@/lib/email.server";
+import { signPasswordResetToken, verifyPasswordResetToken } from "@/lib/password-reset.server";
+import { sendPasswordResetEmail, sendPinResetEmail } from "@/lib/email.server";
 
 const PhoneSchema = z
   .string()
@@ -327,6 +328,72 @@ export const resetPasswordWithEmail = createServerFn({ method: "POST" })
       .from("profiles")
       .update({ password_hash })
       .eq("id", profile.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const requestPasswordResetEmail = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        whatsapp_number: PhoneSchema,
+        email: EmailSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("whatsapp_number", data.whatsapp_number)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+
+    const profileEmail = (profile as { email?: string | null } | null)?.email ?? null;
+    if (!profile || !profileEmail || profileEmail.toLowerCase() !== data.email) {
+      throw new Error("No matching account found for that WhatsApp number and email.");
+    }
+
+    const token = signPasswordResetToken(profile.id as string);
+    let origin = "https://freshxservices.com.ng";
+    try {
+      const req = getRequest();
+      const url = new URL(req.url);
+      origin = `${url.protocol}//${url.host}`;
+    } catch {
+      // fallback above
+    }
+
+    await sendPasswordResetEmail({
+      to: profileEmail,
+      name: (profile as { full_name?: string | null }).full_name ?? "",
+      resetUrl: `${origin}/reset-password?token=${encodeURIComponent(token)}`,
+    });
+
+    const [user, domain] = profileEmail.split("@");
+    const maskedUser =
+      user.length <= 2 ? user[0] + "*" : user.slice(0, 2) + "*".repeat(Math.max(1, user.length - 2));
+    return { ok: true, masked_email: `${maskedUser}@${domain}` };
+  });
+
+export const resetPasswordWithToken = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        token: z.string().min(10).max(1000),
+        new_password: PasswordSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const decoded = verifyPasswordResetToken(data.token);
+    if (!decoded) throw new Error("This reset link is invalid or has expired. Request a new one.");
+
+    const password_hash = await hashPassword(data.new_password);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ password_hash })
+      .eq("id", decoded.profileId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
