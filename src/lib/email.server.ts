@@ -176,8 +176,12 @@ ${params.resetUrl}
 If you didn't ask for this, ignore this email.`;
   try {
     const res = await client().emails.send({ from, to: params.to, subject, html, text });
-    if (res.error) console.error("[email] pin reset error:", res.error);
+    if (res.error) {
+      console.error("[email] pin reset error:", res.error);
+      throw new Error("Could not send the reset email. Please try again in a few minutes.");
+    }
   } catch (err) {
     console.error("[email] pin reset failed:", err);
+    throw new Error("Could not send the reset email. Please try again in a few minutes.");
   }
 }
