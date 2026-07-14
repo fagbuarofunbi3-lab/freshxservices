@@ -2,19 +2,22 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { resetTransactionPinWithToken } from "@/lib/auth.functions";
+import { resetTransactionPinWithToken, resetTransactionPinWithVerifiedEmail } from "@/lib/auth.functions";
 import { AuthShell, Field } from "./signup";
 
 export const Route = createFileRoute("/reset-pin")({
   validateSearch: (search: Record<string, unknown>) => ({
     token: typeof search.token === "string" ? search.token : "",
+    source: typeof search.source === "string" ? search.source : "",
   }),
   component: ResetPinPage,
 });
 
 function ResetPinPage() {
-  const { token } = Route.useSearch();
-  const fn = useServerFn(resetTransactionPinWithToken);
+  const { token, source } = Route.useSearch();
+  const isBuiltInEmailLink = source === "auth";
+  const tokenFn = useServerFn(resetTransactionPinWithToken);
+  const verifiedEmailFn = useServerFn(resetTransactionPinWithVerifiedEmail);
   const navigate = useNavigate();
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -22,12 +25,16 @@ function ResetPinPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!token) return toast.error("Missing reset token. Open the link from your email again.");
+    if (!token && !isBuiltInEmailLink) return toast.error("Missing reset token. Open the link from your email again.");
     if (!/^\d{4}$/.test(next)) return toast.error("PIN must be exactly 4 digits");
     if (next !== confirm) return toast.error("PINs do not match");
     setLoading(true);
     try {
-      await fn({ data: { token, new_pin: next } });
+      if (isBuiltInEmailLink) {
+        await verifiedEmailFn({ data: { new_pin: next } });
+      } else {
+        await tokenFn({ data: { token, new_pin: next } });
+      }
       toast.success("Your transaction PIN has been reset.");
       await navigate({ to: "/login", replace: true });
     } catch (err) {
@@ -37,7 +44,7 @@ function ResetPinPage() {
     }
   }
 
-  if (!token) {
+  if (!token && !isBuiltInEmailLink) {
     return (
       <AuthShell title="Reset transaction PIN" subtitle="This link is missing its reset token.">
         <p className="text-sm text-muted-foreground">
