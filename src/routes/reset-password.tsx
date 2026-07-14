@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { resetPasswordWithToken, resetPasswordWithVerifiedEmail } from "@/lib/auth.functions";
 import { AuthShell, Field, PasswordInput } from "./signup";
 
@@ -23,6 +24,33 @@ function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(isBuiltInEmailLink);
+
+  useEffect(() => {
+    if (!isBuiltInEmailLink) return;
+    let cancelled = false;
+    async function prepareEmailSession() {
+      try {
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error) {
+            url.searchParams.delete("code");
+            window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+          }
+        } else {
+          await supabase.auth.getSession();
+        }
+      } finally {
+        if (!cancelled) setCheckingLink(false);
+      }
+    }
+    void prepareEmailSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [isBuiltInEmailLink]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,10 +98,10 @@ function ResetPasswordPage() {
         </Field>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || checkingLink}
           className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Saving…" : "Save new password"}
+          {checkingLink ? "Verifying link…" : loading ? "Saving…" : "Save new password"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
