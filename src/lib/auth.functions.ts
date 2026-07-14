@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getFreshXSession } from "@/lib/session.server";
-import { signPinResetToken, verifyPinResetToken } from "@/lib/pin-reset.server";
-import { signPasswordResetToken, verifyPasswordResetToken } from "@/lib/password-reset.server";
+import { verifyPinResetToken } from "@/lib/pin-reset.server";
+import { verifyPasswordResetToken } from "@/lib/password-reset.server";
 // Email helpers are dynamically imported inside handlers to keep server-only
 // deps out of the client bundle for this *.functions.ts module.
 
@@ -355,27 +355,36 @@ export const requestPasswordResetEmail = createServerFn({ method: "POST" })
       throw new Error("No matching account found for that WhatsApp number and email.");
     }
 
-    const token = signPasswordResetToken(profile.id as string);
-    let origin = "https://freshxservices.com.ng";
-    try {
-      const req = getRequest();
-      const url = new URL(req.url);
-      origin = `${url.protocol}//${url.host}`;
-    } catch {
-      // fallback above
-    }
-
-    const { sendPasswordResetEmail } = await import("@/lib/email.server");
-    await sendPasswordResetEmail({
-      to: profileEmail,
+    const { sendBuiltInRecoveryEmail, maskEmail } = await import("@/lib/auth-email-reset.server");
+    await sendBuiltInRecoveryEmail({
+      email: profileEmail,
       name: (profile as { full_name?: string | null }).full_name ?? "",
-      resetUrl: `${origin}/reset-password?token=${encodeURIComponent(token)}`,
+      profileId: profile.id as string,
+      redirectTo: "https://freshxservices.com.ng/reset-password?source=auth",
+      failureMessage: "Could not send the password reset email. Please try again in a few minutes.",
     });
 
-    const [user, domain] = profileEmail.split("@");
-    const maskedUser =
-      user.length <= 2 ? user[0] + "*" : user.slice(0, 2) + "*".repeat(Math.max(1, user.length - 2));
-    return { ok: true, masked_email: `${maskedUser}@${domain}` };
+    return { ok: true, masked_email: maskEmail(profileEmail) };
+  });
+
+export const resetPasswordWithVerifiedEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ new_password: PasswordSchema }).parse(input))
+  .handler(async ({ data, context }) => {
+    const email = String((context.claims as { email?: unknown }).email ?? "").trim().toLowerCase();
+    if (!email) throw new Error("Could not verify your email. Open the reset link from your email again.");
+
+    const password_hash = await hashPassword(data.new_password);
+    const { data: updated, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ password_hash })
+      .ilike("email", email)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("No FreshX account was found for this verified email.");
+    return { ok: true };
   });
 
 export const resetPasswordWithToken = createServerFn({ method: "POST" })
@@ -421,33 +430,38 @@ export const requestTransactionPinReset = createServerFn({ method: "POST" }).han
       );
     }
 
-    const token = signPinResetToken(profile.id as string);
-
-    // Build an absolute URL to /reset-pin using the request origin.
-    let origin = "https://freshxservices.com.ng";
-    try {
-      const req = getRequest();
-      const url = new URL(req.url);
-      origin = `${url.protocol}//${url.host}`;
-    } catch {
-      // ignore — fallback origin above
-    }
-    const resetUrl = `${origin}/reset-pin?token=${encodeURIComponent(token)}`;
-
-    const { sendPinResetEmail } = await import("@/lib/email.server");
-    await sendPinResetEmail({
-      to: email,
+    const { sendBuiltInRecoveryEmail, maskEmail } = await import("@/lib/auth-email-reset.server");
+    await sendBuiltInRecoveryEmail({
+      email,
       name: (profile as { full_name?: string | null }).full_name ?? "",
-      resetUrl,
+      profileId: profile.id as string,
+      redirectTo: "https://freshxservices.com.ng/reset-pin?source=auth",
+      failureMessage: "Could not send the reset email. Please try again in a few minutes.",
     });
 
-    // Return a masked email for confirmation UX.
-    const [user, domain] = email.split("@");
-    const maskedUser =
-      user.length <= 2 ? user[0] + "*" : user.slice(0, 2) + "*".repeat(Math.max(1, user.length - 2));
-    return { ok: true, masked_email: `${maskedUser}@${domain}` };
+    return { ok: true, masked_email: maskEmail(email) };
   },
 );
+
+export const resetTransactionPinWithVerifiedEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ new_pin: PinSchema }).parse(input))
+  .handler(async ({ data, context }) => {
+    const email = String((context.claims as { email?: unknown }).email ?? "").trim().toLowerCase();
+    if (!email) throw new Error("Could not verify your email. Open the reset link from your email again.");
+
+    const hash = await hashPassword(data.new_pin);
+    const { data: updated, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ transaction_pin_hash: hash })
+      .ilike("email", email)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("No FreshX account was found for this verified email.");
+    return { ok: true };
+  });
 
 export const resetTransactionPinWithToken = createServerFn({ method: "POST" })
   .inputValidator((input) =>

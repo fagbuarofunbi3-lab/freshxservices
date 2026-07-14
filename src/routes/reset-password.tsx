@@ -1,33 +1,68 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { resetPasswordWithToken } from "@/lib/auth.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { resetPasswordWithToken, resetPasswordWithVerifiedEmail } from "@/lib/auth.functions";
 import { AuthShell, Field, PasswordInput } from "./signup";
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (search: Record<string, unknown>) => ({
     token: typeof search.token === "string" ? search.token : "",
+    source: typeof search.source === "string" ? search.source : "",
   }),
   component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
-  const { token } = Route.useSearch();
-  const fn = useServerFn(resetPasswordWithToken);
+  const { token, source } = Route.useSearch();
+  const isBuiltInEmailLink = source === "auth";
+  const tokenFn = useServerFn(resetPasswordWithToken);
+  const verifiedEmailFn = useServerFn(resetPasswordWithVerifiedEmail);
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(isBuiltInEmailLink);
+
+  useEffect(() => {
+    if (!isBuiltInEmailLink) return;
+    let cancelled = false;
+    async function prepareEmailSession() {
+      try {
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error) {
+            url.searchParams.delete("code");
+            window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+          }
+        } else {
+          await supabase.auth.getSession();
+        }
+      } finally {
+        if (!cancelled) setCheckingLink(false);
+      }
+    }
+    void prepareEmailSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [isBuiltInEmailLink]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!token) return toast.error("Missing reset token. Open the link from your email again.");
+    if (!token && !isBuiltInEmailLink) return toast.error("Missing reset token. Open the link from your email again.");
     if (password !== confirm) return toast.error("Passwords do not match");
     setLoading(true);
     try {
-      await fn({ data: { token, new_password: password } });
+      if (isBuiltInEmailLink) {
+        await verifiedEmailFn({ data: { new_password: password } });
+      } else {
+        await tokenFn({ data: { token, new_password: password } });
+      }
       toast.success("Password reset. You can now log in.");
       await navigate({ to: "/login", replace: true });
     } catch (err) {
@@ -37,7 +72,7 @@ function ResetPasswordPage() {
     }
   }
 
-  if (!token) {
+  if (!token && !isBuiltInEmailLink) {
     return (
       <AuthShell title="Reset password" subtitle="This link is missing its reset token.">
         <p className="text-sm text-muted-foreground">
@@ -63,10 +98,10 @@ function ResetPasswordPage() {
         </Field>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || checkingLink}
           className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Saving…" : "Save new password"}
+          {checkingLink ? "Verifying link…" : loading ? "Saving…" : "Save new password"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
