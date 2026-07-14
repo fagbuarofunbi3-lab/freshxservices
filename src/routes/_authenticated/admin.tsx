@@ -17,6 +17,7 @@ const tabs = [
   { to: "/admin/catalog", label: "Catalog" },
   { to: "/admin/promos", label: "Promos" },
   { to: "/admin/referrals", label: "Referrals" },
+  { to: "/admin/professionals", label: "Professionals" },
   { to: "/admin/settings", label: "Settings" },
 
 ] as const;

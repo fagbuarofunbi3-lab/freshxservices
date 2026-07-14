@@ -221,9 +221,39 @@ function NewOrderPage() {
             onClick={() => setService("cleaning")}
           />
         </div>
+
+        <div className="mt-8">
+          <div className="mb-2 text-xs uppercase tracking-wider text-primary">
+            FreshX Professionals
+          </div>
+          <h2 className="font-display text-xl">Book a local pro</h2>
+          <p className="text-sm text-muted-foreground">
+            Vetted hair stylists, barbers and more — right here on FreshX.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { value: "hairdressing", label: "Hairdressing", sub: "Braids, styling, treatments" },
+              { value: "barbering", label: "Barbering", sub: "Cuts, shaves, grooming" },
+              { value: "hygiene", label: "Hygiene Products", sub: "Personal care items" },
+              { value: "gas_refill", label: "Gas Refill", sub: "Cylinders refilled fast" },
+              { value: "accommodation", label: "Accommodation", sub: "Short-let & rentals" },
+            ].map((c) => (
+              <Link
+                key={c.value}
+                to="/browse/$category"
+                params={{ category: c.value }}
+                className="rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40"
+              >
+                <div className="text-sm font-medium">{c.label}</div>
+                <div className="text-xs text-muted-foreground">{c.sub}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
+
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

@@ -1,51 +1,74 @@
-## Goal
+## FreshX Professionals — build plan
 
-Make FreshX the "partner company" step in TrustBridge Nigeria's referral game. TrustBridge is where the game starts and ends; FreshX just needs to (1) give each ambassador a real, shareable referral URL to paste back into TrustBridge, and (2) count signups/orders that come through it. No webhook to TrustBridge for now.
+### 1. Database (one migration)
 
-## What changes on FreshX
+New tables in `public`:
 
-### 1. Public referral landing page `/r/[code]`
+- `professionals`
+  - `id`, `profile_id` (unique, FK auth.users), `category` (enum: `hairdressing`, `barbering`, `hygiene`, `gas_refill`, `accommodation`), `business_name`, `slug` (unique, url-safe), `whatsapp_number`, `is_active`, timestamps.
+- `professional_catalog_items`
+  - `id`, `professional_id` FK, `image_url`, `title`, `price` numeric, `position` int. Max 8 enforced via trigger.
+- `professional_reviews`
+  - `id`, `professional_id` FK, `reviewer_profile_id` FK, `rating` 1–5, `comment`, `created_at`. Unique (professional, reviewer) — one review per user per pro, editable.
 
-- New public route `src/routes/r.$code.tsx` (SSR, no auth gate).
-- Loader looks up `referral_codes` by code (case-insensitive, `is_active = true`) using the server publishable client + a narrow `TO anon` SELECT policy on `referral_codes` for `code, is_active` only (no owner PII).
-- If code is invalid/inactive → still render the page, but treat as "no code" (don't block signup).
-- Page shows: FreshX intro, what the user gets, and a single big **"Sign up on FreshX"** CTA that navigates to `/signup?ref=CODE`.
-- `head()` sets route-specific title/description/OG so WhatsApp previews look right.
-- Mobile-first layout (this is the whole point — links open in WhatsApp browser).
+RLS + GRANTs:
+- `professionals`: `SELECT TO anon, authenticated` where `is_active=true` (public shop pages). Owner (`profile_id = auth.uid()`) can UPDATE own row. Admin manages via service role (server fn).
+- `professional_catalog_items`: `SELECT TO anon, authenticated`. Owner full CRUD scoped by professional ownership.
+- `professional_reviews`: `SELECT TO anon, authenticated`. `INSERT/UPDATE/DELETE` where `reviewer_profile_id = auth.uid()`.
 
-### 2. Signup prefill from `?ref=`
+Slug generation: lowercase business_name, dashes, dedupe with numeric suffix — done in server fn.
 
-- `src/routes/signup.tsx`: read `?ref=` on mount, uppercase it, and prefill the existing "Referral code" field. Field stays editable.
-- No other signup logic changes — existing `signUp` server fn already accepts `referral_code` and increments `times_used`.
+### 2. Server functions
 
-### 3. "Share your link" surface for ambassadors
+- `src/lib/professionals.functions.ts`
+  - `adminPromoteToProfessional({ profileId, category })` — admin only via `has_role`. Creates row with placeholder business_name (`"<user name>'s shop"`) + slug.
+  - `adminListProfessionals()` — admin view.
+  - `adminUnsetProfessional({ id })`.
+  - `getMyProfessional()` — for the pro's own dashboard.
+  - `updateMyProfessional({ business_name, whatsapp_number })` — regenerates slug when business name changes (ensuring uniqueness).
+  - `upsertCatalogItem({ id?, image_url, title, price, position })` — enforces max 8.
+  - `deleteCatalogItem({ id })`.
+  - `listProfessionalsByCategory({ category })` — public.
+  - `getProfessionalBySlug({ slug })` — public, joins catalog + review aggregate.
+  - `addOrUpdateReview({ professional_id, rating, comment })`.
+  - `listReviews({ professional_id })`.
 
-The user pastes their FreshX link into TrustBridge, so they need to copy it easily.
+Image uploads reuse existing `site-media` bucket (path `professionals/<profileId>/...`).
 
-- On the existing **Referral Challenge / Leaderboard** page (`src/routes/_authenticated/leaderboard.tsx`) and/or the ambassador dashboard section, add a "Your FreshX referral link" block for signed-in users who own a referral code:
-  - Show `https://freshxservices.com.ng/r/CODE`
-  - Copy button + native Share button (`navigator.share`) with prefilled WhatsApp text.
-- Users without an admin-assigned code see a short note: "Ask admin to assign you a referral code to join the challenge."
+### 3. Routes
 
-### 4. Nothing changes for admin
+New:
+- `src/routes/_authenticated/professional.tsx` — pro dashboard (business name, WhatsApp, up to 8 catalog cards with image upload + price + title, shareable shop URL with copy button). Redirects to `/dashboard` if user is not a professional.
+- `src/routes/_authenticated/order.category.$category.tsx` — list of professionals in that category (name + rating + tile → shop).
+- `src/routes/shop.$slug.tsx` — public route. Loader fetches by slug. Uses `_authenticated` pattern via redirect: if not signed in, redirect to `/login?redirect=/shop/<slug>`. Shows business name, avg rating, catalog grid, reviews list + add-review form, booking form (location + special instructions + preferred time), "Book Now" → opens `wa.me/<pro-number>` with prefilled message including user's name and all fields.
 
-- Admin section stays as-is. No TrustBridge tab, no webhook UI. (Skip webhook per user's answer.)
+Modified:
+- `src/routes/_authenticated/order.new.tsx` — expand "What do you need?" from 2 tiles to 7: Laundry, Cleaning, Hairdressing, Barbering, Hygiene products, Gas refill, Accommodation. First two keep existing behavior; the other 5 route to `/order/category/<category>`.
+- `src/routes/_authenticated/admin.customers.tsx` — add a "Make FreshX Professional" action beside the existing referral action. Opens a small modal to pick the category. Shows current professional status.
+- Sidebar / nav wherever the "Referral Challenge" button lives (dashboard) — add a "My Professional Shop" link that appears only if `getMyProfessional()` returns a row.
 
-## The FreshX-side Lovable prompt (deliverable to paste into TrustBridge convo / keep for reference)
+### 4. Booking WhatsApp message format
 
-> **FreshX referral-link support for the TrustBridge Nigeria game**
->
-> On FreshX (freshxservices.com.ng), add a public referral landing page at `/r/[code]` that anyone can open from a WhatsApp-shared link. The page shows a short FreshX intro and one big "Sign up on FreshX" button. Clicking it goes to `/signup?ref=[code]`, which prefills the existing Referral code field so the new signup is credited to the ambassador who owns that code. If the code is missing or inactive, still let them sign up normally without a code.
->
-> Every FreshX user who has been assigned a referral code by admin should see their personal shareable link `https://freshxservices.com.ng/r/[their code]` on the Referral Challenge page, with Copy and Share (WhatsApp) buttons. This is the link they paste into TrustBridge's Game Instructions page so TrustBridge can wrap it as `trustbridge.com.ng/g/[their trustbridge code]`.
->
-> The existing FreshX referral tracking (times used, monthly signups, active users who placed an order) already powers the leaderboard, so no extra counters are needed. Do not add any TrustBridge webhook or cross-site callback for now. Keep the whole flow mobile-first since users open these links inside WhatsApp.
->
-> Do not touch admin screens, order flow, wallet, or any other feature.
+```
+Hi <business_name>, my name is <user full name>.
+I'd like to book from your FreshX shop.
 
-## Technical notes
+Service: <category label>
+Preferred time: <schedule>
+Location: <location>
+Notes: <special instructions>
 
-- New file: `src/routes/r.$code.tsx` (public, SSR).
-- Edited: `src/routes/signup.tsx` (read `?ref=`), `src/routes/_authenticated/leaderboard.tsx` (share block).
-- Migration: add `TO anon` SELECT policy on `referral_codes` limited to `code, is_active` (or add a small `getPublicReferralCode` server fn using the publishable-key client so we don't widen anon reads).
-- No changes to `referrals.functions.ts`, orders, admin, or auth middleware.
+Sent from freshxservices.com.ng/shop/<slug>
+```
+
+### 5. Not changing
+
+Existing laundry, cleaning, wallet, referral, promo, admin overview/orders, hero page — untouched.
+
+### Technical notes
+
+- Slug uniqueness handled in server fn with a small `while exists` loop appending `-2`, `-3`, etc.
+- Reviews aggregate (avg rating, count) computed in `getProfessionalBySlug` via a SQL view or inline aggregate — inline aggregate for simplicity.
+- Public shop route uses the `requireSupabaseAuth`-free public server fn pattern (server publishable client + narrow anon SELECT policies already granted above).
+- Shop URL displayed: `${window.location.origin}/shop/<slug>`.
+- Only ONE professional per user (unique `profile_id`). Admin can change category via update.
