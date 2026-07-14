@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedProfessionalRouteImport } from './routes/_authenticated/professional'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -27,11 +28,14 @@ import { Route as AuthenticatedAmbassadorRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicFlutterwaveWebhookRouteImport } from './routes/api/public/flutterwave-webhook'
+import { Route as AuthenticatedShopSlugRouteImport } from './routes/_authenticated/shop.$slug'
 import { Route as AuthenticatedOrdersIdRouteImport } from './routes/_authenticated/orders.$id'
 import { Route as AuthenticatedOrderNewRouteImport } from './routes/_authenticated/order.new'
+import { Route as AuthenticatedBrowseCategoryRouteImport } from './routes/_authenticated/browse.$category'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 import { Route as AuthenticatedAdminReferralsRouteImport } from './routes/_authenticated/admin.referrals'
 import { Route as AuthenticatedAdminPromosRouteImport } from './routes/_authenticated/admin.promos'
+import { Route as AuthenticatedAdminProfessionalsRouteImport } from './routes/_authenticated/admin.professionals'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin.orders'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin.catalog'
@@ -91,6 +95,12 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProfessionalRoute =
+  AuthenticatedProfessionalRouteImport.update({
+    id: '/professional',
+    path: '/professional',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -128,6 +138,11 @@ const ApiPublicFlutterwaveWebhookRoute =
     path: '/api/public/flutterwave-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedShopSlugRoute = AuthenticatedShopSlugRouteImport.update({
+  id: '/shop/$slug',
+  path: '/shop/$slug',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedOrdersIdRoute = AuthenticatedOrdersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -138,6 +153,12 @@ const AuthenticatedOrderNewRoute = AuthenticatedOrderNewRouteImport.update({
   path: '/order/new',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBrowseCategoryRoute =
+  AuthenticatedBrowseCategoryRouteImport.update({
+    id: '/browse/$category',
+    path: '/browse/$category',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminSettingsRoute =
   AuthenticatedAdminSettingsRouteImport.update({
     id: '/settings',
@@ -154,6 +175,12 @@ const AuthenticatedAdminPromosRoute =
   AuthenticatedAdminPromosRouteImport.update({
     id: '/promos',
     path: '/promos',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminProfessionalsRoute =
+  AuthenticatedAdminProfessionalsRouteImport.update({
+    id: '/professionals',
+    path: '/professionals',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminOrdersRoute =
@@ -194,17 +221,21 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
+  '/professional': typeof AuthenticatedProfessionalRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/r/$code': typeof RCodeRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/professionals': typeof AuthenticatedAdminProfessionalsRoute
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
   '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/browse/$category': typeof AuthenticatedBrowseCategoryRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/shop/$slug': typeof AuthenticatedShopSlugRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
@@ -221,17 +252,21 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
+  '/professional': typeof AuthenticatedProfessionalRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/r/$code': typeof RCodeRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/professionals': typeof AuthenticatedAdminProfessionalsRoute
   '/admin/promos': typeof AuthenticatedAdminPromosRoute
   '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/browse/$category': typeof AuthenticatedBrowseCategoryRoute
   '/order/new': typeof AuthenticatedOrderNewRoute
   '/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/shop/$slug': typeof AuthenticatedShopSlugRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
@@ -251,17 +286,21 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
+  '/_authenticated/professional': typeof AuthenticatedProfessionalRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/r/$code': typeof RCodeRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/_authenticated/admin/professionals': typeof AuthenticatedAdminProfessionalsRoute
   '/_authenticated/admin/promos': typeof AuthenticatedAdminPromosRoute
   '/_authenticated/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/browse/$category': typeof AuthenticatedBrowseCategoryRoute
   '/_authenticated/order/new': typeof AuthenticatedOrderNewRoute
   '/_authenticated/orders/$id': typeof AuthenticatedOrdersIdRoute
+  '/_authenticated/shop/$slug': typeof AuthenticatedShopSlugRoute
   '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/order/confirmed/$id': typeof AuthenticatedOrderConfirmedIdRoute
@@ -281,17 +320,21 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/leaderboard'
     | '/orders'
+    | '/professional'
     | '/settings'
     | '/wallet'
     | '/r/$code'
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/orders'
+    | '/admin/professionals'
     | '/admin/promos'
     | '/admin/referrals'
     | '/admin/settings'
+    | '/browse/$category'
     | '/order/new'
     | '/orders/$id'
+    | '/shop/$slug'
     | '/api/public/flutterwave-webhook'
     | '/admin/'
     | '/order/confirmed/$id'
@@ -308,17 +351,21 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/leaderboard'
     | '/orders'
+    | '/professional'
     | '/settings'
     | '/wallet'
     | '/r/$code'
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/orders'
+    | '/admin/professionals'
     | '/admin/promos'
     | '/admin/referrals'
     | '/admin/settings'
+    | '/browse/$category'
     | '/order/new'
     | '/orders/$id'
+    | '/shop/$slug'
     | '/api/public/flutterwave-webhook'
     | '/admin'
     | '/order/confirmed/$id'
@@ -337,17 +384,21 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/leaderboard'
     | '/_authenticated/orders'
+    | '/_authenticated/professional'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
     | '/r/$code'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/orders'
+    | '/_authenticated/admin/professionals'
     | '/_authenticated/admin/promos'
     | '/_authenticated/admin/referrals'
     | '/_authenticated/admin/settings'
+    | '/_authenticated/browse/$category'
     | '/_authenticated/order/new'
     | '/_authenticated/orders/$id'
+    | '/_authenticated/shop/$slug'
     | '/api/public/flutterwave-webhook'
     | '/_authenticated/admin/'
     | '/_authenticated/order/confirmed/$id'
@@ -445,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/professional': {
+      id: '/_authenticated/professional'
+      path: '/professional'
+      fullPath: '/professional'
+      preLoaderRoute: typeof AuthenticatedProfessionalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/orders': {
       id: '/_authenticated/orders'
       path: '/orders'
@@ -494,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFlutterwaveWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/shop/$slug': {
+      id: '/_authenticated/shop/$slug'
+      path: '/shop/$slug'
+      fullPath: '/shop/$slug'
+      preLoaderRoute: typeof AuthenticatedShopSlugRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/orders/$id': {
       id: '/_authenticated/orders/$id'
       path: '/$id'
@@ -506,6 +571,13 @@ declare module '@tanstack/react-router' {
       path: '/order/new'
       fullPath: '/order/new'
       preLoaderRoute: typeof AuthenticatedOrderNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/browse/$category': {
+      id: '/_authenticated/browse/$category'
+      path: '/browse/$category'
+      fullPath: '/browse/$category'
+      preLoaderRoute: typeof AuthenticatedBrowseCategoryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/settings': {
@@ -527,6 +599,13 @@ declare module '@tanstack/react-router' {
       path: '/promos'
       fullPath: '/admin/promos'
       preLoaderRoute: typeof AuthenticatedAdminPromosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/professionals': {
+      id: '/_authenticated/admin/professionals'
+      path: '/professionals'
+      fullPath: '/admin/professionals'
+      preLoaderRoute: typeof AuthenticatedAdminProfessionalsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/orders': {
@@ -564,6 +643,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCatalogRoute: typeof AuthenticatedAdminCatalogRoute
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
+  AuthenticatedAdminProfessionalsRoute: typeof AuthenticatedAdminProfessionalsRoute
   AuthenticatedAdminPromosRoute: typeof AuthenticatedAdminPromosRoute
   AuthenticatedAdminReferralsRoute: typeof AuthenticatedAdminReferralsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
@@ -574,6 +654,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCatalogRoute: AuthenticatedAdminCatalogRoute,
   AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
+  AuthenticatedAdminProfessionalsRoute: AuthenticatedAdminProfessionalsRoute,
   AuthenticatedAdminPromosRoute: AuthenticatedAdminPromosRoute,
   AuthenticatedAdminReferralsRoute: AuthenticatedAdminReferralsRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
@@ -600,9 +681,12 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
+  AuthenticatedProfessionalRoute: typeof AuthenticatedProfessionalRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedBrowseCategoryRoute: typeof AuthenticatedBrowseCategoryRoute
   AuthenticatedOrderNewRoute: typeof AuthenticatedOrderNewRoute
+  AuthenticatedShopSlugRoute: typeof AuthenticatedShopSlugRoute
   AuthenticatedOrderConfirmedIdRoute: typeof AuthenticatedOrderConfirmedIdRoute
 }
 
@@ -612,9 +696,12 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
+  AuthenticatedProfessionalRoute: AuthenticatedProfessionalRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedBrowseCategoryRoute: AuthenticatedBrowseCategoryRoute,
   AuthenticatedOrderNewRoute: AuthenticatedOrderNewRoute,
+  AuthenticatedShopSlugRoute: AuthenticatedShopSlugRoute,
   AuthenticatedOrderConfirmedIdRoute: AuthenticatedOrderConfirmedIdRoute,
 }
 
