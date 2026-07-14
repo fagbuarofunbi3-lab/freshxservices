@@ -5,7 +5,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getFreshXSession } from "@/lib/session.server";
 import { signPinResetToken, verifyPinResetToken } from "@/lib/pin-reset.server";
 import { signPasswordResetToken, verifyPasswordResetToken } from "@/lib/password-reset.server";
-import { sendPasswordResetEmail, sendPinResetEmail } from "@/lib/email.server";
+// Email helpers are dynamically imported inside handlers to keep server-only
+// deps out of the client bundle for this *.functions.ts module.
 
 const PhoneSchema = z
   .string()
@@ -364,6 +365,7 @@ export const requestPasswordResetEmail = createServerFn({ method: "POST" })
       // fallback above
     }
 
+    const { sendPasswordResetEmail } = await import("@/lib/email.server");
     await sendPasswordResetEmail({
       to: profileEmail,
       name: (profile as { full_name?: string | null }).full_name ?? "",
@@ -432,6 +434,7 @@ export const requestTransactionPinReset = createServerFn({ method: "POST" }).han
     }
     const resetUrl = `${origin}/reset-pin?token=${encodeURIComponent(token)}`;
 
+    const { sendPinResetEmail } = await import("@/lib/email.server");
     await sendPinResetEmail({
       to: email,
       name: (profile as { full_name?: string | null }).full_name ?? "",
