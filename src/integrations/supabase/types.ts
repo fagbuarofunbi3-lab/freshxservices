@@ -124,6 +124,136 @@ export type Database = {
           },
         ]
       }
+      professional_catalog_items: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          position: number
+          price: number
+          professional_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          position?: number
+          price?: number
+          professional_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          position?: number
+          price?: number
+          professional_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_catalog_items_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          professional_id: string
+          rating: number
+          reviewer_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          id?: string
+          professional_id: string
+          rating: number
+          reviewer_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          professional_id?: string
+          rating?: number
+          reviewer_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_reviews_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_reviews_reviewer_profile_id_fkey"
+            columns: ["reviewer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professionals: {
+        Row: {
+          business_name: string
+          category: Database["public"]["Enums"]["professional_category"]
+          created_at: string
+          id: string
+          is_active: boolean
+          profile_id: string
+          slug: string
+          updated_at: string
+          whatsapp_number: string
+        }
+        Insert: {
+          business_name: string
+          category: Database["public"]["Enums"]["professional_category"]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          profile_id: string
+          slug: string
+          updated_at?: string
+          whatsapp_number?: string
+        }
+        Update: {
+          business_name?: string
+          category?: Database["public"]["Enums"]["professional_category"]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          profile_id?: string
+          slug?: string
+          updated_at?: string
+          whatsapp_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professionals_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -380,7 +510,12 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      professional_category:
+        | "hairdressing"
+        | "barbering"
+        | "hygiene"
+        | "gas_refill"
+        | "accommodation"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -507,6 +642,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      professional_category: [
+        "hairdressing",
+        "barbering",
+        "hygiene",
+        "gas_refill",
+        "accommodation",
+      ],
+    },
   },
 } as const
