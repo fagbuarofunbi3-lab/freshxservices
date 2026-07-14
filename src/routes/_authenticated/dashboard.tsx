@@ -106,6 +106,37 @@ function DashboardPage() {
         </section>
       )}
 
+      {myPro && (
+        <section className="rounded-2xl border border-primary/30 bg-primary-soft/60 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Store className="h-4 w-4" /> Your FreshX Professional shop
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {myPro.business_name} — manage items, prices and your shareable link.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/professional"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Manage shop
+              </Link>
+              <Link
+                to="/shop/$slug"
+                params={{ slug: myPro.slug }}
+                className="rounded-md border border-primary/30 bg-background px-4 py-2 text-sm font-medium text-primary hover:bg-muted"
+              >
+                View shop
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+
       {/* Active order tracker */}
       <section className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-xl">Current order</h2>
