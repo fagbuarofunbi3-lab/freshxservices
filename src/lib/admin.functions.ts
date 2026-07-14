@@ -633,3 +633,49 @@ export const adminUpsertCustomerReferral = createServerFn({ method: "POST" })
     return { ok: true, code };
   });
 
+// ============ Admin role management ============
+// Search users by name / WhatsApp / email so an admin can promote them.
+export const adminSearchUsers = createServerFn({ method: "GET" })
+  .inputValidator((input) =>
+    z.object({ q: z.string().trim().min(1).max(120) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const like = `%${data.q}%`;
+    const { data: rows, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, whatsapp_number, email, role")
+      .or(`full_name.ilike.${like},whatsapp_number.ilike.${like},email.ilike.${like}`)
+      .limit(20);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r) => ({
+      id: r.id as string,
+      full_name: (r.full_name as string) ?? "",
+      whatsapp_number: (r.whatsapp_number as string) ?? "",
+      email: ((r as { email?: string | null }).email as string | null) ?? null,
+      role: (r.role as string) ?? "user",
+    }));
+  });
+
+export const adminSetUserRole = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        profile_id: z.string().uuid(),
+        role: z.enum(["admin", "user"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const callerId = await requireAdmin();
+    if (data.role === "user" && data.profile_id === callerId) {
+      throw new Error("You can't remove your own admin access.");
+    }
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ role: data.role })
+      .eq("id", data.profile_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
