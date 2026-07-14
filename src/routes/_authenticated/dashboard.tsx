@@ -34,6 +34,10 @@ function DashboardPage() {
     queryKey: ["site-media"],
     queryFn: () => getMedia({}),
   });
+  const { data: myPro } = useQuery({
+    queryKey: ["my-professional"],
+    queryFn: () => getMyProfessional(),
+  });
   const active = orders?.find((o) => o.status !== "delivered" && o.status !== "cancelled");
   const recent = orders?.slice(0, 3) ?? [];
   const balance = me?.wallet_balance ?? 0;
