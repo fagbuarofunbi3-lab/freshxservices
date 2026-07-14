@@ -321,6 +321,100 @@ function AdminSettingsPage() {
           </button>
         </div>
       </section>
+
+      <AdminAccessSection />
     </div>
   );
 }
+
+function AdminAccessSection() {
+  const search = useServerFn(adminSearchUsers);
+  const setRole = useServerFn(adminSetUserRole);
+  const [q, setQ] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const { data: results, refetch, isFetching } = useQuery({
+    queryKey: ["admin-user-search", q],
+    queryFn: () => search({ data: { q } }),
+    enabled: q.trim().length >= 2,
+  });
+
+  async function toggleRole(profile_id: string, currentRole: string) {
+    const next = currentRole === "admin" ? "user" : "admin";
+    setBusyId(profile_id);
+    try {
+      await setRole({ data: { profile_id, role: next } });
+      toast.success(next === "admin" ? "User promoted to admin" : "Admin access removed");
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update role");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <ShieldCheck className="h-4 w-4 text-primary" /> Admin access
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Search for any user by name, WhatsApp number, or email, then promote them to admin.
+        Admins get the same admin dashboard access you have.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name / WhatsApp / email"
+          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </div>
+
+      {q.trim().length >= 2 && (
+        <div className="mt-4 divide-y divide-border rounded-md border border-border">
+          {isFetching && !results ? (
+            <div className="p-3 text-sm text-muted-foreground">Searching…</div>
+          ) : (results?.length ?? 0) === 0 ? (
+            <div className="p-3 text-sm text-muted-foreground">No users found.</div>
+          ) : (
+            results!.map((u) => (
+              <div key={u.id} className="flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{u.full_name || "—"}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {u.whatsapp_number}
+                    {u.email ? ` · ${u.email}` : ""}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs capitalize ${
+                      u.role === "admin"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {u.role}
+                  </span>
+                  <button
+                    onClick={() => toggleRole(u.id, u.role)}
+                    disabled={busyId === u.id}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    {busyId === u.id
+                      ? "Saving…"
+                      : u.role === "admin"
+                        ? "Remove admin"
+                        : "Make admin"}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
