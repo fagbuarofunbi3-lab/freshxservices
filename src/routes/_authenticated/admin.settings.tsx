@@ -3,11 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ImageIcon, Phone, Video, Upload, X } from "lucide-react";
+import { ImageIcon, Phone, Video, Upload, X, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { adminSearchUsers, adminSetUserRole } from "@/lib/admin.functions";
 import {
   getContactWhatsapp,
   adminUpdateContactWhatsapp,
+  getSiteMedia,
+  adminUpdateSiteMedia,
+  adminCreateSignedMediaUpload,
+  adminFinalizeMediaUpload,
+} from "@/lib/site-settings.functions";
   getSiteMedia,
   adminUpdateSiteMedia,
   adminCreateSignedMediaUpload,
