@@ -14,11 +14,6 @@ import {
   adminCreateSignedMediaUpload,
   adminFinalizeMediaUpload,
 } from "@/lib/site-settings.functions";
-  getSiteMedia,
-  adminUpdateSiteMedia,
-  adminCreateSignedMediaUpload,
-  adminFinalizeMediaUpload,
-} from "@/lib/site-settings.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: AdminSettingsPage,
