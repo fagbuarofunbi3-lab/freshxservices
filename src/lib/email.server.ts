@@ -1,15 +1,33 @@
-// Server-only Resend helper. Never import from client code.
-import { Resend } from "resend";
+// Server-only email helper. Uses Resend HTTP API directly via fetch so it works
+// reliably in the Cloudflare Worker runtime (no Node-only SDK).
+// Never import from client code.
 
-let _resend: Resend | undefined;
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-function client(): Resend {
-  if (!_resend) {
-    const key = process.env.RESEND_API_KEY;
-    if (!key) throw new Error("RESEND_API_KEY is not configured");
-    _resend = new Resend(key);
+type ResendPayload = {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html?: string;
+  text?: string;
+};
+
+async function sendViaResend(payload: ResendPayload): Promise<void> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_API_KEY is not configured");
+  const res = await fetch(RESEND_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`[email] resend error [${res.status}]: ${body}`);
+    throw new Error(`Email provider error [${res.status}]: ${body || "unknown"}`);
   }
-  return _resend;
 }
 
 export type OrderEmailItem = { name: string; quantity: number; line_total: number };
@@ -36,6 +54,19 @@ export type OrderEmailPayload = {
 
 function naira(n: number) {
   return `₦${Math.round(n).toLocaleString()}`;
+}
+
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function defaultFrom(): string {
+  return process.env.RESEND_FROM_EMAIL ?? "FreshX Services <noreply@freshxservices.com.ng>";
 }
 
 function renderOrderEmail(p: OrderEmailPayload): { subject: string; html: string; text: string } {
@@ -113,28 +144,17 @@ function renderOrderEmail(p: OrderEmailPayload): { subject: string; html: string
   return { subject, html, text };
 }
 
-function escapeHtml(s: string): string {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 export async function sendOrderEmailToOwner(payload: OrderEmailPayload): Promise<void> {
   const to = process.env.OWNER_NOTIFICATION_EMAIL;
   if (!to) {
     console.warn("[email] OWNER_NOTIFICATION_EMAIL not set; skipping owner notification");
     return;
   }
-  const from = process.env.RESEND_FROM_EMAIL ?? "FreshX Orders <onboarding@resend.dev>";
   const { subject, html, text } = renderOrderEmail(payload);
   try {
-    const res = await client().emails.send({ from, to, subject, html, text });
-    if (res.error) console.error("[email] resend error:", res.error);
+    await sendViaResend({ from: defaultFrom(), to, subject, html, text });
   } catch (err) {
-    console.error("[email] failed to send:", err);
+    console.error("[email] order email failed:", err);
   }
 }
 
@@ -143,7 +163,6 @@ export async function sendPinResetEmail(params: {
   name: string;
   resetUrl: string;
 }): Promise<void> {
-  const from = process.env.RESEND_FROM_EMAIL ?? "FreshX Services <onboarding@resend.dev>";
   const subject = "Reset your FreshX transaction PIN";
   const safeName = escapeHtml(params.name || "there");
   const safeUrl = escapeHtml(params.resetUrl);
@@ -175,11 +194,7 @@ ${params.resetUrl}
 
 If you didn't ask for this, ignore this email.`;
   try {
-    const res = await client().emails.send({ from, to: params.to, subject, html, text });
-    if (res.error) {
-      console.error("[email] pin reset error:", res.error);
-      throw new Error("Could not send the reset email. Please try again in a few minutes.");
-    }
+    await sendViaResend({ from: defaultFrom(), to: params.to, subject, html, text });
   } catch (err) {
     console.error("[email] pin reset failed:", err);
     throw new Error("Could not send the reset email. Please try again in a few minutes.");
@@ -191,7 +206,6 @@ export async function sendPasswordResetEmail(params: {
   name: string;
   resetUrl: string;
 }): Promise<void> {
-  const from = process.env.RESEND_FROM_EMAIL ?? "FreshX Services <noreply@freshxservices.com.ng>";
   const subject = "Reset your FreshX password";
   const safeName = escapeHtml(params.name || "there");
   const safeUrl = escapeHtml(params.resetUrl);
@@ -223,11 +237,7 @@ ${params.resetUrl}
 
 If you didn't ask for this, ignore this email.`;
   try {
-    const res = await client().emails.send({ from, to: params.to, subject, html, text });
-    if (res.error) {
-      console.error("[email] password reset error:", res.error);
-      throw new Error("Could not send the password reset email. Please try again in a few minutes.");
-    }
+    await sendViaResend({ from: defaultFrom(), to: params.to, subject, html, text });
   } catch (err) {
     console.error("[email] password reset failed:", err);
     throw new Error("Could not send the password reset email. Please try again in a few minutes.");
