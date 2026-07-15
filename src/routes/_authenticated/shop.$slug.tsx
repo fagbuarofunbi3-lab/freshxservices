@@ -208,36 +208,38 @@ function ShopPage() {
 
         <div className="mt-4 space-y-3 text-sm">
           <label className="block">
-            <span className="text-muted-foreground">Request (optional)</span>
+            <span className="text-muted-foreground">{copy.requestLabel}</span>
             <textarea
               value={request}
               onChange={(e) => setRequest(e.target.value)}
               rows={3}
-              placeholder="Anything you need — e.g. haircut style, gas cylinder size, hair type, dates for accommodation…"
+              placeholder={copy.requestPlaceholder}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
             />
           </label>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-muted-foreground">Schedule date (optional)</span>
-              <input
-                type="date"
-                value={schedDate}
-                onChange={(e) => setSchedDate(e.target.value)}
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
-              />
-            </label>
-            <label className="block">
-              <span className="text-muted-foreground">Schedule time (optional)</span>
-              <input
-                type="time"
-                value={schedTime}
-                onChange={(e) => setSchedTime(e.target.value)}
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
-              />
-            </label>
-          </div>
+          {copy.showSchedule && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-muted-foreground">Schedule date (optional)</span>
+                <input
+                  type="date"
+                  value={schedDate}
+                  onChange={(e) => setSchedDate(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+                />
+              </label>
+              <label className="block">
+                <span className="text-muted-foreground">Schedule time (optional)</span>
+                <input
+                  type="time"
+                  value={schedTime}
+                  onChange={(e) => setSchedTime(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+                />
+              </label>
+            </div>
+          )}
 
           <label className="block">
             <span className="text-muted-foreground">
@@ -246,7 +248,7 @@ function ShopPage() {
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Your area / address"
+              placeholder={copy.locationPlaceholder}
               required
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
             />
