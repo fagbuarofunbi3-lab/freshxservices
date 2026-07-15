@@ -437,12 +437,16 @@ function ItemRow({
         />
       </div>
       <label className="block text-xs text-muted-foreground">
-        Price (₦)
+        Price ₦ (optional)
         <input
           type="number"
           min={0}
-          value={cur.price}
-          onChange={(e) => setCur({ ...cur, price: Number(e.target.value) })}
+          value={cur.price === 0 ? "" : cur.price}
+          placeholder="Leave blank to hide"
+          onChange={(e) => {
+            const v = e.target.value;
+            setCur({ ...cur, price: v === "" ? 0 : Number(v) });
+          }}
           className="mt-1 w-full rounded-md border border-border bg-background px-2 py-2 text-sm"
         />
       </label>

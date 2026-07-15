@@ -296,7 +296,9 @@ function ShopPage() {
                 </div>
                 <div className="p-4">
                   <div className="font-medium">{it.title}</div>
-                  <div className="mt-1 text-sm text-muted-foreground">{naira(it.price)}</div>
+                  {it.price > 0 && (
+                    <div className="mt-1 text-sm text-muted-foreground">{naira(it.price)}</div>
+                  )}
                 </div>
               </div>
             ))}
