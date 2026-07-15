@@ -164,7 +164,7 @@ export async function sendOrderEmailToOwner(payload: OrderEmailPayload): Promise
   }
   const { subject, html, text } = renderOrderEmail(payload);
   try {
-    await sendViaResend({ from: defaultFrom(), to, subject, html, text });
+    await sendViaResend({ from: ownerFrom(), to, subject, html, text });
   } catch (err) {
     console.error("[email] order email failed:", err);
   }
