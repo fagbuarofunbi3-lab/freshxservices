@@ -264,7 +264,12 @@ export const updateMyProfessional = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const id = await requireSession();
-    const patch: Record<string, unknown> = {
+    const patch: {
+      business_name: string;
+      whatsapp_number: string;
+      is_active: boolean;
+      logo_url?: string;
+    } = {
       business_name: data.business_name,
       whatsapp_number: data.whatsapp_number,
       is_active: data.is_active,

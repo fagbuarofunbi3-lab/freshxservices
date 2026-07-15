@@ -66,7 +66,8 @@ function ShopPage() {
   const shopUrl =
     typeof window !== "undefined" ? `${window.location.origin}/shop/${shop.slug}` : "";
 
-  const canContact = shop.whatsapp_number.trim().length > 0;
+  const shopData = shop;
+  const canContact = shopData.whatsapp_number.trim().length > 0;
 
   function contactProfessional() {
     if (!location.trim()) {
@@ -78,9 +79,9 @@ function ShopPage() {
       return;
     }
     const username = me?.full_name?.trim() || "a FreshX customer";
-    const number = shop.whatsapp_number.replace(/[^0-9]/g, "");
+    const number = shopData.whatsapp_number.replace(/[^0-9]/g, "");
     const lines = [
-      `Hello ${shop.business_name},`,
+      `Hello ${shopData.business_name},`,
       ``,
       `My name is ${username}. I want to inquire about your service.`,
       `I am in ${location.trim()}.`,
