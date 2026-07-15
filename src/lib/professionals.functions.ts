@@ -474,9 +474,12 @@ export const getProfessionalBySlug = createServerFn({ method: "GET" })
     const rmap = new Map((reviewers ?? []).map((r) => [r.id as string, r.full_name as string]));
     const rs = reviews ?? [];
     const avg = rs.length ? rs.reduce((s, r) => s + Number(r.rating), 0) / rs.length : 0;
-    const media = await resolveMediaMap([
-      pro.logo_url as string | null,
-      ...(items ?? []).map((i) => i.image_url as string | null),
+    const [logoMap, itemMap] = await Promise.all([
+      resolveMediaMap([pro.logo_url as string | null], "logo"),
+      resolveMediaMap(
+        (items ?? []).map((i) => i.image_url as string | null),
+        "full",
+      ),
     ]);
     return {
       id: pro.id as string,
@@ -484,10 +487,10 @@ export const getProfessionalBySlug = createServerFn({ method: "GET" })
       slug: pro.slug as string,
       category: pro.category as string,
       whatsapp_number: pro.whatsapp_number as string,
-      logo_url: media.get(((pro.logo_url as string | null) ?? "").trim()) ?? "",
+      logo_url: logoMap.get(((pro.logo_url as string | null) ?? "").trim()) ?? "",
       items: (items ?? []).map((i) => ({
         id: i.id as string,
-        image_url: media.get(((i.image_url as string | null) ?? "").trim()) ?? "",
+        image_url: itemMap.get(((i.image_url as string | null) ?? "").trim()) ?? "",
         title: (i.title as string) ?? "",
         price: Number(i.price ?? 0),
       })),
