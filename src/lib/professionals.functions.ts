@@ -417,9 +417,12 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
     }
     const allItemPaths: string[] = [];
     for (const arr of itemsByPro.values()) allItemPaths.push(...arr);
-    const media = await resolveMediaMap([
-      ...(pros ?? []).map((p) => p.logo_url as string | null),
-      ...allItemPaths,
+    const [logoMap, itemMap] = await Promise.all([
+      resolveMediaMap(
+        (pros ?? []).map((p) => p.logo_url as string | null),
+        "logo",
+      ),
+      resolveMediaMap(allItemPaths, "thumb"),
     ]);
     return (pros ?? []).map((p) => {
       const rm = rMap.get(p.id as string);
@@ -431,9 +434,9 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
         slug: p.slug as string,
         category: p.category as string,
         whatsapp_number: p.whatsapp_number as string,
-        catalog_images: proItems.map((path) => media.get(path) ?? "").filter(Boolean),
-        cover_image: (proItems[0] && media.get(proItems[0])) || "",
-        logo_url: media.get(logoPath) ?? "",
+        catalog_images: proItems.map((path) => itemMap.get(path) ?? "").filter(Boolean),
+        cover_image: (proItems[0] && itemMap.get(proItems[0])) || "",
+        logo_url: logoMap.get(logoPath) ?? "",
         avg_rating: rm && rm.n ? rm.sum / rm.n : 0,
         review_count: rm?.n ?? 0,
       };
