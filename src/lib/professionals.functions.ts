@@ -240,9 +240,12 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
     .select("id, image_url, title, price, position")
     .eq("professional_id", pro.id)
     .order("position", { ascending: true });
-  const media = await resolveMediaMap([
-    pro.logo_url as string | null,
-    ...(items ?? []).map((i) => i.image_url as string | null),
+  const [logoMap, itemMap] = await Promise.all([
+    resolveMediaMap([pro.logo_url as string | null], "logo"),
+    resolveMediaMap(
+      (items ?? []).map((i) => i.image_url as string | null),
+      "thumb",
+    ),
   ]);
   return {
     id: pro.id as string,
@@ -252,7 +255,7 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
     whatsapp_number: pro.whatsapp_number as string,
     is_active: !!pro.is_active,
     logo_url: (pro.logo_url as string | null) ?? "",
-    logo_display_url: media.get(((pro.logo_url as string | null) ?? "").trim()) ?? "",
+    logo_display_url: logoMap.get(((pro.logo_url as string | null) ?? "").trim()) ?? "",
     items: (items ?? []).map((i) => ({
       id: i.id as string,
       image_url: (i.image_url as string) ?? "",
