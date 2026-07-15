@@ -19,6 +19,9 @@ const CategorySchema = z.enum([
   "accommodation",
 ]);
 
+const BUCKET = "professional-media";
+const SIGNED_URL_TTL = 60 * 60 * 24 * 7; // 7 days
+
 async function requireSession(): Promise<string> {
   const session = await getFreshXSession();
   const id = session.data?.profileId;
@@ -38,11 +41,13 @@ async function requireAdmin(): Promise<string> {
 }
 
 function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "shop";
+  return (
+    input
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "shop"
+  );
 }
 
 async function uniqueSlug(base: string): Promise<string> {
@@ -58,6 +63,81 @@ async function uniqueSlug(base: string): Promise<string> {
   }
   return `${slugify(base)}-${Date.now().toString(36)}`;
 }
+
+// Resolve a stored value into a URL a browser can load.
+// - full http(s) URL → returned as-is (back-compat with previous URL entries)
+// - storage path → signed URL from the private bucket
+async function resolveMediaUrl(pathOrUrl: string | null | undefined): Promise<string> {
+  const v = (pathOrUrl ?? "").trim();
+  if (!v) return "";
+  if (/^https?:\/\//i.test(v)) return v;
+  const { data } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(v, SIGNED_URL_TTL);
+  return data?.signedUrl ?? "";
+}
+
+async function resolveMediaMap(paths: Array<string | null | undefined>): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const unique = Array.from(new Set(paths.map((p) => (p ?? "").trim()).filter(Boolean)));
+  await Promise.all(
+    unique.map(async (p) => {
+      map.set(p, await resolveMediaUrl(p));
+    }),
+  );
+  return map;
+}
+
+// ============ Upload ============
+export const uploadProfessionalImage = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        // Data URL: "data:image/jpeg;base64,...."
+        data_url: z.string().min(20).max(15 * 1024 * 1024), // ~15MB base64
+        kind: z.enum(["logo", "catalog"]),
+        filename: z.string().trim().max(120).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const profileId = await requireSession();
+    const { data: pro } = await supabaseAdmin
+      .from("professionals")
+      .select("id")
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (!pro) throw new Error("You are not a professional.");
+
+    const match = data.data_url.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) throw new Error("Please pick a valid image file.");
+    const mime = match[1];
+    const b64 = match[2];
+    const buf = Buffer.from(b64, "base64");
+    if (buf.byteLength > 8 * 1024 * 1024) {
+      throw new Error("Image too large. Please pick something under 8MB.");
+    }
+    const ext =
+      mime === "image/png"
+        ? "png"
+        : mime === "image/webp"
+          ? "webp"
+          : mime === "image/gif"
+            ? "gif"
+            : "jpg";
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const path = `${data.kind}/${pro.id}/${id}.${ext}`;
+    const { error } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .upload(path, buf, { contentType: mime, upsert: false });
+    if (error) throw new Error(error.message);
+
+    const url = await resolveMediaUrl(path);
+    return { path, url };
+  });
 
 // ============ Admin: promote / list / delete ============
 export const adminPromoteProfessional = createServerFn({ method: "POST" })
@@ -138,7 +218,7 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
   const id = await requireSession();
   const { data: pro } = await supabaseAdmin
     .from("professionals")
-    .select("id, category, business_name, slug, whatsapp_number, is_active")
+    .select("id, category, business_name, slug, whatsapp_number, is_active, logo_url")
     .eq("profile_id", id)
     .maybeSingle();
   if (!pro) return null;
@@ -147,6 +227,10 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
     .select("id, image_url, title, price, position")
     .eq("professional_id", pro.id)
     .order("position", { ascending: true });
+  const media = await resolveMediaMap([
+    pro.logo_url as string | null,
+    ...(items ?? []).map((i) => i.image_url as string | null),
+  ]);
   return {
     id: pro.id as string,
     category: pro.category as string,
@@ -154,9 +238,12 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
     slug: pro.slug as string,
     whatsapp_number: pro.whatsapp_number as string,
     is_active: !!pro.is_active,
+    logo_url: (pro.logo_url as string | null) ?? "",
+    logo_display_url: media.get(((pro.logo_url as string | null) ?? "").trim()) ?? "",
     items: (items ?? []).map((i) => ({
       id: i.id as string,
       image_url: (i.image_url as string) ?? "",
+      image_display_url: media.get(((i.image_url as string | null) ?? "").trim()) ?? "",
       title: (i.title as string) ?? "",
       price: Number(i.price ?? 0),
       position: Number(i.position ?? 0),
@@ -171,18 +258,21 @@ export const updateMyProfessional = createServerFn({ method: "POST" })
         business_name: z.string().trim().min(2).max(80),
         whatsapp_number: z.string().trim().max(30),
         is_active: z.boolean().default(true),
+        logo_url: z.string().trim().max(500).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const id = await requireSession();
+    const patch: Record<string, unknown> = {
+      business_name: data.business_name,
+      whatsapp_number: data.whatsapp_number,
+      is_active: data.is_active,
+    };
+    if (typeof data.logo_url === "string") patch.logo_url = data.logo_url;
     const { error } = await supabaseAdmin
       .from("professionals")
-      .update({
-        business_name: data.business_name,
-        whatsapp_number: data.whatsapp_number,
-        is_active: data.is_active,
-      })
+      .update(patch)
       .eq("profile_id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -264,7 +354,7 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
     await requireSession();
     const { data: pros, error } = await supabaseAdmin
       .from("professionals")
-      .select("id, business_name, slug, category, whatsapp_number")
+      .select("id, business_name, slug, category, whatsapp_number, logo_url")
       .eq("category", data.category)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -285,10 +375,10 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
             .in("professional_id", ids)
         : Promise.resolve({ data: [] as Array<{ professional_id: string; rating: number }> }),
     ]);
-    const coverMap = new Map<string, string>();
+    const coverPathMap = new Map<string, string>();
     for (const it of items ?? []) {
       const pid = it.professional_id as string;
-      if (!coverMap.has(pid) && it.image_url) coverMap.set(pid, it.image_url as string);
+      if (!coverPathMap.has(pid) && it.image_url) coverPathMap.set(pid, it.image_url as string);
     }
     const rMap = new Map<string, { sum: number; n: number }>();
     for (const r of reviews ?? []) {
@@ -298,15 +388,22 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
       cur.n += 1;
       rMap.set(pid, cur);
     }
+    const media = await resolveMediaMap([
+      ...(pros ?? []).map((p) => p.logo_url as string | null),
+      ...Array.from(coverPathMap.values()),
+    ]);
     return (pros ?? []).map((p) => {
       const rm = rMap.get(p.id as string);
+      const coverPath = coverPathMap.get(p.id as string) ?? "";
+      const logoPath = ((p.logo_url as string | null) ?? "").trim();
       return {
         id: p.id as string,
         business_name: p.business_name as string,
         slug: p.slug as string,
         category: p.category as string,
         whatsapp_number: p.whatsapp_number as string,
-        cover_image: coverMap.get(p.id as string) ?? "",
+        cover_image: media.get(coverPath) ?? "",
+        logo_url: media.get(logoPath) ?? "",
         avg_rating: rm && rm.n ? rm.sum / rm.n : 0,
         review_count: rm?.n ?? 0,
       };
@@ -319,7 +416,7 @@ export const getProfessionalBySlug = createServerFn({ method: "GET" })
     await requireSession();
     const { data: pro } = await supabaseAdmin
       .from("professionals")
-      .select("id, business_name, slug, category, whatsapp_number, is_active")
+      .select("id, business_name, slug, category, whatsapp_number, is_active, logo_url")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!pro || !pro.is_active) return null;
@@ -344,15 +441,20 @@ export const getProfessionalBySlug = createServerFn({ method: "GET" })
     const rmap = new Map((reviewers ?? []).map((r) => [r.id as string, r.full_name as string]));
     const rs = reviews ?? [];
     const avg = rs.length ? rs.reduce((s, r) => s + Number(r.rating), 0) / rs.length : 0;
+    const media = await resolveMediaMap([
+      pro.logo_url as string | null,
+      ...(items ?? []).map((i) => i.image_url as string | null),
+    ]);
     return {
       id: pro.id as string,
       business_name: pro.business_name as string,
       slug: pro.slug as string,
       category: pro.category as string,
       whatsapp_number: pro.whatsapp_number as string,
+      logo_url: media.get(((pro.logo_url as string | null) ?? "").trim()) ?? "",
       items: (items ?? []).map((i) => ({
         id: i.id as string,
-        image_url: (i.image_url as string) ?? "",
+        image_url: media.get(((i.image_url as string | null) ?? "").trim()) ?? "",
         title: (i.title as string) ?? "",
         price: Number(i.price ?? 0),
       })),
@@ -380,7 +482,6 @@ export const submitReview = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const id = await requireSession();
-    // upsert: one review per (professional, reviewer)
     const { data: existing } = await supabaseAdmin
       .from("professional_reviews")
       .select("id")
@@ -404,3 +505,14 @@ export const submitReview = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+// Fetch current user's display name (for prefilling the contact message)
+export const getMyDisplayName = createServerFn({ method: "GET" }).handler(async () => {
+  const id = await requireSession();
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", id)
+    .maybeSingle();
+  return { full_name: (data?.full_name as string | null) ?? "" };
+});
