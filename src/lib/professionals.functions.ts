@@ -64,25 +64,38 @@ async function uniqueSlug(base: string): Promise<string> {
   return `${slugify(base)}-${Date.now().toString(36)}`;
 }
 
+type ImgVariant = "logo" | "thumb" | "full";
+const TRANSFORMS: Record<ImgVariant, { width: number; height: number; resize: "cover" | "contain"; quality: number }> = {
+  logo: { width: 160, height: 160, resize: "cover", quality: 70 },
+  thumb: { width: 480, height: 480, resize: "cover", quality: 65 },
+  full: { width: 1000, height: 1000, resize: "contain", quality: 75 },
+};
+
 // Resolve a stored value into a URL a browser can load.
 // - full http(s) URL → returned as-is (back-compat with previous URL entries)
-// - storage path → signed URL from the private bucket
-async function resolveMediaUrl(pathOrUrl: string | null | undefined): Promise<string> {
+// - storage path → signed URL from the private bucket, resized on the fly
+async function resolveMediaUrl(
+  pathOrUrl: string | null | undefined,
+  variant: ImgVariant = "thumb",
+): Promise<string> {
   const v = (pathOrUrl ?? "").trim();
   if (!v) return "";
   if (/^https?:\/\//i.test(v)) return v;
   const { data } = await supabaseAdmin.storage
     .from(BUCKET)
-    .createSignedUrl(v, SIGNED_URL_TTL);
+    .createSignedUrl(v, SIGNED_URL_TTL, { transform: TRANSFORMS[variant] });
   return data?.signedUrl ?? "";
 }
 
-async function resolveMediaMap(paths: Array<string | null | undefined>): Promise<Map<string, string>> {
+async function resolveMediaMap(
+  paths: Array<string | null | undefined>,
+  variant: ImgVariant = "thumb",
+): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   const unique = Array.from(new Set(paths.map((p) => (p ?? "").trim()).filter(Boolean)));
   await Promise.all(
     unique.map(async (p) => {
-      map.set(p, await resolveMediaUrl(p));
+      map.set(p, await resolveMediaUrl(p, variant));
     }),
   );
   return map;
