@@ -65,7 +65,12 @@ function AdminProfessionals() {
     () => new Set((pros ?? []).map((p) => p.profile_id)),
     [pros],
   );
-  const eligible = (customers ?? []).filter((c) => !promoted.has(c.id));
+  const eligible = (customers ?? [])
+    .filter((c) => !promoted.has(c.id))
+    .slice()
+    .sort((a, b) =>
+      (a.full_name ?? "").localeCompare(b.full_name ?? "", undefined, { sensitivity: "base" }),
+    );
 
   return (
     <div className="space-y-5">
