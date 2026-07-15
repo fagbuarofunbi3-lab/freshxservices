@@ -63,6 +63,49 @@ function ShopPage() {
   const categoryLabel =
     PRO_CATEGORIES.find((c) => c.value === shop.category)?.label ?? shop.category;
 
+  const CATEGORY_COPY: Record<
+    string,
+    { requestLabel: string; requestPlaceholder: string; locationPlaceholder: string; showSchedule: boolean }
+  > = {
+    hairdressing: {
+      requestLabel: "Hairstyle you want (optional)",
+      requestPlaceholder: "e.g. Knotless braids, medium size, waist length; bringing my own attachment",
+      locationPlaceholder: "Where should the stylist meet you? (area / address)",
+      showSchedule: true,
+    },
+    barbering: {
+      requestLabel: "Haircut style you want (optional)",
+      requestPlaceholder: "e.g. Low fade with line-up, beard trim",
+      locationPlaceholder: "Where should the barber meet you? (area / address)",
+      showSchedule: true,
+    },
+    hygiene: {
+      requestLabel: "Products you need (optional)",
+      requestPlaceholder: "e.g. 2 rolls tissue, 1 pack pads, 500ml hand sanitizer",
+      locationPlaceholder: "Delivery address (area / street / landmark)",
+      showSchedule: false,
+    },
+    gas_refill: {
+      requestLabel: "Cylinder size & quantity (optional)",
+      requestPlaceholder: "e.g. 12.5kg cylinder refill, 1 unit — pickup & return",
+      locationPlaceholder: "Pickup address (area / street / landmark)",
+      showSchedule: true,
+    },
+    accommodation: {
+      requestLabel: "Stay details (optional)",
+      requestPlaceholder: "e.g. 2 nights, 1 bedroom, 2 guests, check-in Fri evening",
+      locationPlaceholder: "Preferred area / neighborhood",
+      showSchedule: true,
+    },
+  };
+  const copy =
+    CATEGORY_COPY[shop.category] ?? {
+      requestLabel: "Request (optional)",
+      requestPlaceholder: "Tell the professional what you need",
+      locationPlaceholder: "Your area / address",
+      showSchedule: true,
+    };
+
   const shopUrl =
     typeof window !== "undefined" ? `${window.location.origin}/shop/${shop.slug}` : "";
 
