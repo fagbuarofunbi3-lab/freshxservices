@@ -56,37 +56,63 @@ function BrowsePage() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(data ?? []).map((p) => (
-          <Link
-            key={p.id}
-            to="/shop/$slug"
-            params={{ slug: p.slug }}
-            className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:border-primary/40"
-          >
-            <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
-              {p.cover_image ? (
-                <img
-                  src={p.cover_image}
-                  alt={p.business_name}
-                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                  No image
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <div className="font-display text-lg leading-tight">{p.business_name}</div>
-              <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                {p.review_count ? p.avg_rating.toFixed(1) : "New"}
-                {p.review_count > 0 && <span>· {p.review_count} reviews</span>}
+        {(data ?? []).map((p) => {
+          const imgs = (p.catalog_images ?? []).slice(0, 4);
+          return (
+            <Link
+              key={p.id}
+              to="/shop/$slug"
+              params={{ slug: p.slug }}
+              className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:border-primary/40"
+            >
+              <div className="grid aspect-[4/3] w-full grid-cols-2 grid-rows-2 gap-0.5 bg-muted">
+                {imgs.length > 0 ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="overflow-hidden bg-muted">
+                      {imgs[i] ? (
+                        <img
+                          src={imgs[i]}
+                          alt={`${p.business_name} item ${i + 1}`}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-2 row-span-2 flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                    No images yet
+                  </div>
+                )}
               </div>
-            </div>
-          </Link>
-        ))}
+              <div className="flex items-center gap-3 p-4">
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                  {p.logo_url ? (
+                    <img
+                      src={p.logo_url}
+                      alt={`${p.business_name} logo`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[9px] text-muted-foreground">
+                      Logo
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-display text-lg leading-tight">
+                    {p.business_name}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                    {p.review_count ? p.avg_rating.toFixed(1) : "New"}
+                    {p.review_count > 0 && <span>· {p.review_count} reviews</span>}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
       {/* naira is imported for future price teasers; suppress unused warning */}
       <span className="hidden">{naira(0)}</span>
