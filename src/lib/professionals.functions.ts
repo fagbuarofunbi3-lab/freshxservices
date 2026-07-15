@@ -380,10 +380,16 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
             .in("professional_id", ids)
         : Promise.resolve({ data: [] as Array<{ professional_id: string; rating: number }> }),
     ]);
-    const coverPathMap = new Map<string, string>();
+    const itemsByPro = new Map<string, string[]>();
     for (const it of items ?? []) {
       const pid = it.professional_id as string;
-      if (!coverPathMap.has(pid) && it.image_url) coverPathMap.set(pid, it.image_url as string);
+      const path = (it.image_url as string) ?? "";
+      if (!path) continue;
+      const arr = itemsByPro.get(pid) ?? [];
+      if (arr.length < 4) {
+        arr.push(path);
+        itemsByPro.set(pid, arr);
+      }
     }
     const rMap = new Map<string, { sum: number; n: number }>();
     for (const r of reviews ?? []) {
@@ -393,13 +399,15 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
       cur.n += 1;
       rMap.set(pid, cur);
     }
+    const allItemPaths: string[] = [];
+    for (const arr of itemsByPro.values()) allItemPaths.push(...arr);
     const media = await resolveMediaMap([
       ...(pros ?? []).map((p) => p.logo_url as string | null),
-      ...Array.from(coverPathMap.values()),
+      ...allItemPaths,
     ]);
     return (pros ?? []).map((p) => {
       const rm = rMap.get(p.id as string);
-      const coverPath = coverPathMap.get(p.id as string) ?? "";
+      const proItems = itemsByPro.get(p.id as string) ?? [];
       const logoPath = ((p.logo_url as string | null) ?? "").trim();
       return {
         id: p.id as string,
@@ -407,7 +415,8 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
         slug: p.slug as string,
         category: p.category as string,
         whatsapp_number: p.whatsapp_number as string,
-        cover_image: media.get(coverPath) ?? "",
+        catalog_images: proItems.map((path) => media.get(path) ?? "").filter(Boolean),
+        cover_image: (proItems[0] && media.get(proItems[0])) || "",
         logo_url: media.get(logoPath) ?? "",
         avg_rating: rm && rm.n ? rm.sum / rm.n : 0,
         review_count: rm?.n ?? 0,
