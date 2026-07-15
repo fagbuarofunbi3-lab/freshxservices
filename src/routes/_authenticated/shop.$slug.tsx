@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { MessageCircle, Star } from "lucide-react";
+import { Copy, MessageCircle, Share2, Star } from "lucide-react";
 import {
+  getMyDisplayName,
   getProfessionalBySlug,
   PRO_CATEGORIES,
   submitReview,
@@ -14,8 +15,6 @@ export const Route = createFileRoute("/_authenticated/shop/$slug")({
   component: ShopPage,
 });
 
-type ShopItem = { id: string; image_url: string; title: string; price: number };
-
 function ShopPage() {
   const { slug } = Route.useParams();
   const qc = useQueryClient();
@@ -23,8 +22,18 @@ function ShopPage() {
     queryKey: ["shop", slug],
     queryFn: () => getProfessionalBySlug({ data: { slug } }),
   });
+  const { data: me } = useQuery({
+    queryKey: ["my-display-name"],
+    queryFn: () => getMyDisplayName(),
+  });
 
-  const [bookingItem, setBookingItem] = useState<ShopItem | null>(null);
+  // Book form state
+  const [request, setRequest] = useState("");
+  const [schedTime, setSchedTime] = useState("");
+  const [schedDate, setSchedDate] = useState("");
+  const [location, setLocation] = useState("");
+
+  // Review state
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState("");
 
@@ -54,56 +63,200 @@ function ShopPage() {
   const categoryLabel =
     PRO_CATEGORIES.find((c) => c.value === shop.category)?.label ?? shop.category;
 
+  const shopUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/shop/${shop.slug}` : "";
+
+  const shopData = shop;
+  const canContact = shopData.whatsapp_number.trim().length > 0;
+
+  function contactProfessional() {
+    if (!location.trim()) {
+      toast.error("Please add your location — it's required.");
+      return;
+    }
+    if (!canContact) {
+      toast.error("This shop hasn't set a WhatsApp number yet.");
+      return;
+    }
+    const username = me?.full_name?.trim() || "a FreshX customer";
+    const number = shopData.whatsapp_number.replace(/[^0-9]/g, "");
+    const lines = [
+      `Hello ${shopData.business_name},`,
+      ``,
+      `My name is ${username}. I want to inquire about your service.`,
+      `I am in ${location.trim()}.`,
+    ];
+    if (request.trim()) lines.push(``, `Request: ${request.trim()}`);
+    if (schedDate.trim()) lines.push(`Preferred date: ${schedDate.trim()}`);
+    if (schedTime.trim()) lines.push(`Preferred time: ${schedTime.trim()}`);
+    lines.push(``, `(Sent via FreshX)`);
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(lines.join("\n"))}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <div className="text-xs uppercase tracking-wider text-primary">{categoryLabel}</div>
-        <h1 className="font-display text-3xl">{shop.business_name}</h1>
-        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-          <Star className="h-4 w-4 fill-primary text-primary" />
-          {shop.review_count ? shop.avg_rating.toFixed(1) : "New"}
-          {shop.review_count > 0 && <span>· {shop.review_count} reviews</span>}
+      {/* Header with logo */}
+      <div className="flex items-start gap-4">
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+          {shop.logo_url ? (
+            <img
+              src={shop.logo_url}
+              alt={`${shop.business_name} logo`}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+              No logo
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs uppercase tracking-wider text-primary">{categoryLabel}</div>
+          <h1 className="font-display text-3xl leading-tight">{shop.business_name}</h1>
+          <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            {shop.review_count ? shop.avg_rating.toFixed(1) : "New"}
+            {shop.review_count > 0 && <span>· {shop.review_count} reviews</span>}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(shopUrl);
+                toast.success("Link copied");
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs"
+            >
+              <Copy className="h-3 w-3" /> Copy link
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: shop.business_name,
+                      text: `Check out ${shop.business_name} on FreshX`,
+                      url: shopUrl,
+                    });
+                  } else {
+                    navigator.clipboard.writeText(shopUrl);
+                    toast.success("Link copied");
+                  }
+                } catch {
+                  /* noop */
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
+            >
+              <Share2 className="h-3 w-3" /> Share
+            </button>
+          </div>
         </div>
       </div>
 
-      {shop.items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          This shop hasn't added items yet.
+      {/* Book this service */}
+      <section className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-5">
+        <h2 className="font-display text-xl">Book this service</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Fill in what you need — location is required. Then contact {shop.business_name} on WhatsApp.
+        </p>
+
+        <div className="mt-4 space-y-3 text-sm">
+          <label className="block">
+            <span className="text-muted-foreground">Request (optional)</span>
+            <textarea
+              value={request}
+              onChange={(e) => setRequest(e.target.value)}
+              rows={3}
+              placeholder="Anything you need — e.g. haircut style, gas cylinder size, hair type, dates for accommodation…"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-muted-foreground">Schedule date (optional)</span>
+              <input
+                type="date"
+                value={schedDate}
+                onChange={(e) => setSchedDate(e.target.value)}
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-muted-foreground">Schedule time (optional)</span>
+              <input
+                type="time"
+                value={schedTime}
+                onChange={(e) => setSchedTime(e.target.value)}
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-muted-foreground">
+              Location <span className="text-destructive">*</span>
+            </span>
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Your area / address"
+              required
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+            />
+          </label>
         </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {shop.items.map((it) => (
-            <div
-              key={it.id}
-              className="overflow-hidden rounded-2xl border border-border bg-card"
-            >
-              <div className="aspect-square w-full overflow-hidden bg-muted">
-                {it.image_url ? (
-                  <img
-                    src={it.image_url}
-                    alt={it.title}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                    No image
-                  </div>
-                )}
+
+        <button
+          type="button"
+          onClick={contactProfessional}
+          disabled={!canContact}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
+        >
+          <MessageCircle className="h-4 w-4" /> Contact professional
+        </button>
+        {!canContact && (
+          <p className="mt-2 text-xs text-destructive">
+            This shop hasn't set a WhatsApp number yet.
+          </p>
+        )}
+      </section>
+
+      {/* Catalog */}
+      {shop.items.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xl">What we offer</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {shop.items.map((it) => (
+              <div
+                key={it.id}
+                className="overflow-hidden rounded-2xl border border-border bg-card"
+              >
+                <div className="aspect-square w-full overflow-hidden bg-muted">
+                  {it.image_url ? (
+                    <img
+                      src={it.image_url}
+                      alt={it.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="font-medium">{it.title}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{naira(it.price)}</div>
+                </div>
               </div>
-              <div className="p-4">
-                <div className="font-medium">{it.title}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{naira(it.price)}</div>
-                <button
-                  onClick={() => setBookingItem(it)}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-                >
-                  <MessageCircle className="h-4 w-4" /> Book
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Reviews */}
@@ -171,100 +324,6 @@ function ShopPage() {
           </ul>
         )}
       </section>
-
-      {bookingItem && (
-        <BookModal
-          item={bookingItem}
-          shopName={shop.business_name}
-          whatsapp={shop.whatsapp_number}
-          onClose={() => setBookingItem(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-function BookModal({
-  item,
-  shopName,
-  whatsapp,
-  onClose,
-}: {
-  item: ShopItem;
-  shopName: string;
-  whatsapp: string;
-  onClose: () => void;
-}) {
-  const [instructions, setInstructions] = useState("");
-  const [location, setLocation] = useState("");
-
-  const canSend = whatsapp.trim().length > 0;
-
-  function send() {
-    const number = whatsapp.replace(/[^0-9]/g, "");
-    const message = [
-      `Hi ${shopName}, I'd like to book:`,
-      `• ${item.title} — ${naira(item.price)}`,
-      instructions ? `\nInstructions: ${instructions}` : "",
-      location ? `Location: ${location}` : "",
-      `\n(Sent via FreshX)`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    onClose();
-  }
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-      <div className="w-full max-w-md rounded-t-2xl bg-card p-5 sm:rounded-2xl">
-        <h3 className="font-display text-xl">Book: {item.title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Send your booking to {shopName} on WhatsApp.
-        </p>
-
-        <div className="mt-4 space-y-3 text-sm">
-          <label className="block">
-            <span className="text-muted-foreground">Special instructions</span>
-            <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              rows={3}
-              placeholder="e.g. Preferred time, color, size"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-muted-foreground">Location / address</span>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Where should we deliver / meet?"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
-            />
-          </label>
-        </div>
-
-        {!canSend && (
-          <p className="mt-3 text-xs text-destructive">
-            This shop hasn't set a WhatsApp number yet.
-          </p>
-        )}
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-border px-3 py-2 text-sm">
-            Cancel
-          </button>
-          <button
-            disabled={!canSend}
-            onClick={send}
-            className="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            <MessageCircle className="h-4 w-4" /> Send on WhatsApp
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

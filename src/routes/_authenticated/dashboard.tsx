@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, ImageIcon, Shield, Store, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, ArrowRight, Eye, EyeOff, ImageIcon, Shield, Store, Trophy } from "lucide-react";
 import { listMyOrders } from "@/lib/orders.functions";
 import { getSiteMedia } from "@/lib/site-settings.functions";
 import { getMyProfessional } from "@/lib/professionals.functions";
@@ -42,6 +43,20 @@ function DashboardPage() {
   const recent = orders?.slice(0, 3) ?? [];
   const balance = me?.wallet_balance ?? 0;
   const lowBalance = balance < 500;
+  const [showBalance, setShowBalance] = useState(true);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("freshx.hideBalance");
+      if (v === "1") setShowBalance(false);
+    } catch { /* noop */ }
+  }, []);
+  function toggleBalance() {
+    setShowBalance((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("freshx.hideBalance", next ? "0" : "1"); } catch { /* noop */ }
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -53,8 +68,20 @@ function DashboardPage() {
       >
         <div className="freshx-blob" style={{ background: "var(--color-primary)", width: 300, height: 300, top: -100, right: -100, opacity: 0.25 }} />
         <div className="relative">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground">Available balance</div>
-          <div className="mt-2 font-display text-5xl">{naira(balance)}</div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Available balance</div>
+            <button
+              type="button"
+              onClick={toggleBalance}
+              aria-label={showBalance ? "Hide balance" : "Show balance"}
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+            >
+              {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </button>
+          </div>
+          <div className="mt-2 font-display text-5xl">
+            {showBalance ? naira(balance) : "•••••"}
+          </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               to="/wallet"

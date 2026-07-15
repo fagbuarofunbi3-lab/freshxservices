@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { initWalletTopUp, listTransactions } from "@/lib/wallet.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
@@ -21,6 +22,22 @@ function WalletPage() {
   const [amount, setAmount] = useState<number | "">("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showBalance, setShowBalance] = useState(true);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("freshx.hideBalance");
+      if (v === "1") setShowBalance(false);
+    } catch { /* noop */ }
+  }, []);
+
+  function toggleBalance() {
+    setShowBalance((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("freshx.hideBalance", next ? "0" : "1"); } catch { /* noop */ }
+      return next;
+    });
+  }
 
   async function onTopUp() {
     const amt = typeof amount === "number" ? amount : Number(amount);
@@ -41,8 +58,20 @@ function WalletPage() {
   return (
     <div className="space-y-6">
       <section className="glass rounded-2xl p-6 md:p-8">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Wallet balance</div>
-        <div className="mt-2 font-display text-5xl">{naira(me?.wallet_balance ?? 0)}</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Wallet balance</div>
+          <button
+            type="button"
+            onClick={toggleBalance}
+            aria-label={showBalance ? "Hide balance" : "Show balance"}
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+          >
+            {showBalance ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+        </div>
+        <div className="mt-2 font-display text-5xl">
+          {showBalance ? naira(me?.wallet_balance ?? 0) : "•••••"}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-6">

@@ -66,7 +66,19 @@ function escapeHtml(s: string): string {
 }
 
 function defaultFrom(): string {
-  return process.env.RESEND_FROM_EMAIL ?? "FreshX Services <noreply@freshxservices.com.ng>";
+  // Use Resend's onboarding sender by default so notifications go through even
+  // when a custom domain isn't verified yet. `onboarding@resend.dev` delivers
+  // to the Resend account owner's verified email, which is where our owner
+  // notification address is set up. Override with RESEND_FROM_EMAIL only if
+  // a verified domain is configured.
+  return process.env.RESEND_FROM_EMAIL ?? "FreshX Orders <onboarding@resend.dev>";
+}
+
+function ownerFrom(): string {
+  // Owner order emails always go to OWNER_NOTIFICATION_EMAIL, which is the
+  // Resend account owner. Using onboarding@resend.dev guarantees delivery
+  // without needing domain verification.
+  return "FreshX Orders <onboarding@resend.dev>";
 }
 
 function renderOrderEmail(p: OrderEmailPayload): { subject: string; html: string; text: string } {
@@ -152,7 +164,7 @@ export async function sendOrderEmailToOwner(payload: OrderEmailPayload): Promise
   }
   const { subject, html, text } = renderOrderEmail(payload);
   try {
-    await sendViaResend({ from: defaultFrom(), to, subject, html, text });
+    await sendViaResend({ from: ownerFrom(), to, subject, html, text });
   } catch (err) {
     console.error("[email] order email failed:", err);
   }
