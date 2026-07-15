@@ -148,7 +148,7 @@ export const uploadProfessionalImage = createServerFn({ method: "POST" })
       .upload(path, buf, { contentType: mime, upsert: false });
     if (error) throw new Error(error.message);
 
-    const url = await resolveMediaUrl(path);
+    const url = await resolveMediaUrl(path, data.kind === "logo" ? "logo" : "thumb");
     return { path, url };
   });
 
