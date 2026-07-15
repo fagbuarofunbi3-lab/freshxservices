@@ -259,7 +259,7 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
     items: (items ?? []).map((i) => ({
       id: i.id as string,
       image_url: (i.image_url as string) ?? "",
-      image_display_url: media.get(((i.image_url as string | null) ?? "").trim()) ?? "",
+      image_display_url: itemMap.get(((i.image_url as string | null) ?? "").trim()) ?? "",
       title: (i.title as string) ?? "",
       price: Number(i.price ?? 0),
       position: Number(i.position ?? 0),
