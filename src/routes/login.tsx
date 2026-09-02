@@ -6,7 +6,25 @@ import { logIn } from "@/lib/auth.functions";
 import { useInvalidateMe } from "./__root";
 import { AuthShell, Field, PasswordInput } from "./signup";
 
-export const Route = createFileRoute("/login")({ component: LoginPage });
+const LOGIN_TITLE = "Log in to FreshX Services";
+const LOGIN_DESC =
+  "Sign in to your FreshX account to book laundry, cleaning and home services in Port Harcourt, track orders and manage your wallet.";
+
+export const Route = createFileRoute("/login")({
+  component: LoginPage,
+  head: () => ({
+    meta: [
+      { title: LOGIN_TITLE },
+      { name: "description", content: LOGIN_DESC },
+      { property: "og:title", content: LOGIN_TITLE },
+      { property: "og:description", content: LOGIN_DESC },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://freshxservices.com.ng/login" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://freshxservices.com.ng/login" }],
+  }),
+});
 
 function waitForSessionReady() {
   return new Promise((resolve) => setTimeout(resolve, 120));

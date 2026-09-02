@@ -5,7 +5,85 @@ import { motion } from "framer-motion";
 import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone, Video } from "lucide-react";
 import { getContactWhatsapp, getSiteMedia } from "@/lib/site-settings.functions";
 
-export const Route = createFileRoute("/")({ component: Landing });
+const SITE = "https://freshxservices.com.ng";
+const HOME_TITLE = "FreshX Services — Laundry & Cleaning in Port Harcourt";
+const HOME_DESC =
+  "FreshX is an automated laundry, dry cleaning and home cleaning service in Port Harcourt, Nigeria. Book a pickup online, pay from your wallet, and get fresh clothes delivered back to you.";
+
+export const Route = createFileRoute("/")({
+  component: Landing,
+  head: () => ({
+    meta: [
+      { title: HOME_TITLE },
+      { name: "description", content: HOME_DESC },
+      { property: "og:title", content: HOME_TITLE },
+      { property: "og:description", content: HOME_DESC },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE}/` },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: `${SITE}/` }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "@id": `${SITE}/#website`,
+              url: `${SITE}/`,
+              name: "FreshX Services",
+              inLanguage: "en-NG",
+              publisher: { "@id": `${SITE}/#business` },
+            },
+            {
+              "@type": "LocalBusiness",
+              "@id": `${SITE}/#business`,
+              name: "FreshX Services",
+              url: `${SITE}/`,
+              description: HOME_DESC,
+              image: `${SITE}/favicon.ico`,
+              priceRange: "₦₦",
+              areaServed: { "@type": "City", name: "Port Harcourt" },
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "Port Harcourt",
+                addressRegion: "Rivers",
+                addressCountry: "NG",
+              },
+              openingHoursSpecification: [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                  ],
+                  opens: "08:00",
+                  closes: "20:00",
+                },
+              ],
+              makesOffer: [
+                "Laundry pickup and delivery",
+                "Dry cleaning",
+                "Home and office cleaning",
+                "Cooking gas refill",
+                "Barbing and hairdressing",
+              ].map((name) => ({
+                "@type": "Offer",
+                itemOffered: { "@type": "Service", name, areaServed: "Port Harcourt, Nigeria" },
+              })),
+            },
+          ],
+        }),
+      },
+    ],
+  }),
+});
 
 function Landing() {
   const getContact = useServerFn(getContactWhatsapp);
