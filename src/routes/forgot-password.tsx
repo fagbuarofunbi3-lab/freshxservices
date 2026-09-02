@@ -5,7 +5,25 @@ import { toast } from "sonner";
 import { requestPasswordResetEmail } from "@/lib/auth.functions";
 import { AuthShell, Field } from "./signup";
 
-export const Route = createFileRoute("/forgot-password")({ component: ForgotPasswordPage });
+const FP_TITLE = "Reset your FreshX password";
+const FP_DESC =
+  "Forgot your FreshX password? Enter your email and we'll send you a secure link to set a new one.";
+
+export const Route = createFileRoute("/forgot-password")({
+  component: ForgotPasswordPage,
+  head: () => ({
+    meta: [
+      { title: FP_TITLE },
+      { name: "description", content: FP_DESC },
+      { property: "og:title", content: FP_TITLE },
+      { property: "og:description", content: FP_DESC },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://freshxservices.com.ng/forgot-password" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://freshxservices.com.ng/forgot-password" }],
+  }),
+});
 
 function ForgotPasswordPage() {
   const fn = useServerFn(requestPasswordResetEmail);
