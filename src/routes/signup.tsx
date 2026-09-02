@@ -7,7 +7,7 @@ import { signUp } from "@/lib/auth.functions";
 import { useInvalidateMe } from "./__root";
 
 export const Route = createFileRoute("/signup")({
-  validateSearch: (search: Record<string, unknown>) => ({
+validateSearch: (search: Record<string, unknown>): { ref?: string } => ({
     ref: typeof search.ref === "string" ? search.ref : undefined,
   }),
   component: SignUpPage,
