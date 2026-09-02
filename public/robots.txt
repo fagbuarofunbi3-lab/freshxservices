@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Disallow: /reset-password
+Disallow: /reset-pin
+Disallow: /wallet-verify
+
+Sitemap: https://freshxservices.com.ng/sitemap.xml
