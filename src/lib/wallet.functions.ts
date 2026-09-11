@@ -90,7 +90,7 @@ async function resolveTopUpPromo(
 
 // Preview a promo without starting a payment — used by the wallet UI.
 export const previewTopUpPromo = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         code: z.string().trim().min(1).max(40),
@@ -114,7 +114,7 @@ export const previewTopUpPromo = createServerFn({ method: "POST" })
 // Initialize a Flutterwave Standard checkout for a wallet top-up. Returns a
 // hosted payment link. Verification happens on the return route.
 export const initWalletTopUp = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         amount: z.number().int().min(500).max(1_000_000),
@@ -174,7 +174,7 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
 // Verify a returned Flutterwave transaction and credit the wallet.
 // Idempotent: refuses to credit twice for the same tx_ref.
 export const verifyWalletTopUp = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         transaction_id: z.string().min(1).max(100),

@@ -1,11 +1,38 @@
 // Server-only Flutterwave Standard checkout helpers. Never import from client code.
+import fs from "node:fs";
+import path from "node:path";
 
 const FLW_BASE = "https://api.flutterwave.com/v3";
 
 function secretKey(): string {
-  const k = process.env.FLUTTERWAVE_SECRET_KEY;
-  if (!k) throw new Error("FLUTTERWAVE_SECRET_KEY is not configured");
-  return k;
+  let k = process.env.FLUTTERWAVE_SECRET_KEY;
+  if (k && k.trim()) return k.trim();
+
+  // In local development, the Node dev server may have started before .env was populated.
+  // Fall back to reading .env directly so the developer doesn't have to restart the server.
+  if (typeof process !== "undefined" && typeof process.cwd === "function") {
+    try {
+      const envPath = path.resolve(process.cwd(), ".env");
+      if (fs.existsSync(envPath)) {
+        const lines = fs.readFileSync(envPath, "utf-8").split("\n");
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("FLUTTERWAVE_SECRET_KEY=")) {
+            const rawVal = trimmed.slice("FLUTTERWAVE_SECRET_KEY=".length).trim();
+            const cleanVal = rawVal.replace(/^["']|["']$/g, "").trim();
+            if (cleanVal) {
+              process.env.FLUTTERWAVE_SECRET_KEY = cleanVal;
+              return cleanVal;
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore file read errors
+    }
+  }
+
+  throw new Error("FLUTTERWAVE_SECRET_KEY is not configured");
 }
 
 export type FlwInitOptions = {
@@ -76,3 +103,33 @@ export async function verifyFlutterwavePayment(transactionId: string | number): 
     meta: json.data.meta ?? null,
   };
 }
+
+export function getFlutterwaveWebhookHash(): string | undefined {
+  let h = process.env.FLUTTERWAVE_WEBHOOK_HASH;
+  if (h && h.trim()) return h.trim();
+
+  if (typeof process !== "undefined" && typeof process.cwd === "function") {
+    try {
+      const envPath = path.resolve(process.cwd(), ".env");
+      if (fs.existsSync(envPath)) {
+        const lines = fs.readFileSync(envPath, "utf-8").split("\n");
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("FLUTTERWAVE_WEBHOOK_HASH=")) {
+            const rawVal = trimmed.slice("FLUTTERWAVE_WEBHOOK_HASH=".length).trim();
+            const cleanVal = rawVal.replace(/^["']|["']$/g, "").trim();
+            if (cleanVal) {
+              process.env.FLUTTERWAVE_WEBHOOK_HASH = cleanVal;
+              return cleanVal;
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  return undefined;
+}
+

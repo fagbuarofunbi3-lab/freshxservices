@@ -3,12 +3,13 @@
 // FLUTTERWAVE_WEBHOOK_HASH env var. Flutterwave sends that hash in the
 // `verif-hash` header on every webhook delivery.
 import { createFileRoute } from "@tanstack/react-router";
+import { getFlutterwaveWebhookHash } from "@/lib/flutterwave.server";
 
 export const Route = createFileRoute("/api/public/flutterwave-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const expected = process.env.FLUTTERWAVE_WEBHOOK_HASH;
+        const expected = getFlutterwaveWebhookHash();
         // Flutterwave has used several header names across versions/dashboards.
         const got =
           request.headers.get("verif-hash") ||
