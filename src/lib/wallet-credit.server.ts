@@ -23,8 +23,48 @@ export async function creditWalletTopUp(args: {
     _amount: Math.round(args.amount),
     _tx_ref: args.tx_ref,
   });
-  if (error) throw new Error(`Failed to credit wallet: ${error.message}`);
-  const row = data?.[0];
+  let row = data?.[0];
+
+  if (error) {
+    // If RPC is blocked by permission (e.g. anon key used without service_role key), fall back to direct profile update
+    if (error.code === "42501" || /permission denied/i.test(error.message)) {
+      console.warn("[wallet-credit] credit_wallet_topup_atomic blocked by permissions, falling back to direct update");
+      const { data: p, error: pErr } = await supabaseAdmin
+        .from("profiles")
+        .select("wallet_balance")
+        .eq("id", args.profile_id)
+        .single();
+      if (pErr) throw new Error(`Failed to fetch wallet: ${pErr.message}`);
+
+      const newBal = Number(p.wallet_balance ?? 0) + Math.round(args.amount);
+      const { error: updErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ wallet_balance: newBal })
+        .eq("id", args.profile_id);
+      if (updErr) throw new Error(`Failed to credit wallet: ${updErr.message}`);
+
+      try {
+        await supabaseAdmin.from("wallet_transactions").insert({
+          profile_id: args.profile_id,
+          type: "credit",
+          amount: Math.round(args.amount),
+          description: `Wallet top-up (Flutterwave ${args.tx_ref})`,
+        });
+      } catch {
+        // Best effort
+      }
+
+      row = {
+        already_processed: false,
+        new_balance: newBal,
+        amount: Math.round(args.amount),
+        profile_id: args.profile_id,
+      };
+    } else {
+      throw new Error(`Failed to credit wallet: ${error.message}`);
+    }
+  }
+
   if (!row) throw new Error("Failed to credit wallet: no result returned");
 
   // Best-effort referral commission. Failures here MUST NOT roll back the

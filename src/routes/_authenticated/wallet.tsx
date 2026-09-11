@@ -24,6 +24,20 @@ function WalletPage() {
   const [loading, setLoading] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
 
+  // Auto-fill receipt email from user profile if available
+  useEffect(() => {
+    if (me?.email && !email) {
+      setEmail(me.email);
+    }
+  }, [me?.email]);
+
+  // If user navigates back from Flutterwave, unfreeze button
+  useEffect(() => {
+    const onFocus = () => setLoading(false);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
   useEffect(() => {
     try {
       const v = localStorage.getItem("freshx.hideBalance");
@@ -42,13 +56,28 @@ function WalletPage() {
   async function onTopUp() {
     const amt = typeof amount === "number" ? amount : Number(amount);
     if (!amt || amt < 500) return toast.error("Minimum top-up is ₦500");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    const targetEmail = (email || me?.email || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail))
       return toast.error("Enter the email to receive your payment receipt");
     setLoading(true);
     try {
-      const res = await initTopUp({ data: { amount: amt, email } });
-      await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
-      window.location.href = res.payment_link;
+      const redirectUrl = `${window.location.origin}/wallet-verify`;
+      const res = await initTopUp({
+        data: {
+          amount: amt,
+          email: targetEmail,
+          redirect_url: redirectUrl,
+        },
+      });
+      // Fire cache invalidations without blocking redirect
+      invalidateMe();
+      qc.invalidateQueries({ queryKey: ["wallet-tx"] });
+
+      if (res.payment_link) {
+        window.location.href = res.payment_link;
+      } else {
+        throw new Error("No payment link returned by payment provider");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start payment");
       setLoading(false);

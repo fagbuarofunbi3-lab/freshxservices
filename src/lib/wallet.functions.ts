@@ -120,6 +120,7 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
         amount: z.number().int().min(500).max(1_000_000),
         email: z.string().email().max(200),
         promo_code: z.string().trim().min(1).max(40).optional(),
+        redirect_url: z.string().url().optional(),
       })
       .parse(input),
   )
@@ -137,9 +138,29 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
     }
 
     const tx_ref = `FX-TOPUP-${profileId.slice(0, 8)}-${Date.now()}`;
-    const host = getRequestHost();
-    const proto = host.includes("localhost") ? "http" : "https";
-    const redirect_url = `${proto}://${host}/wallet-verify`;
+    
+    // Accurate redirect_url: use client-supplied URL (has exact origin) or resolve intelligently
+    let redirect_url = data.redirect_url;
+    if (!redirect_url) {
+      let host = "";
+      try {
+        host = getRequestHost();
+      } catch {
+        // fallback
+      }
+      if (!host) host = "localhost:8080";
+      const isLocal =
+        host.includes("localhost") ||
+        host.includes("127.0.0.1") ||
+        host.startsWith("10.") ||
+        host.startsWith("192.168.") ||
+        host.startsWith("172.") ||
+        host.includes(":8080") ||
+        host.includes(":5173") ||
+        host.includes(":3000");
+      const proto = isLocal ? "http" : "https";
+      redirect_url = `${proto}://${host}/wallet-verify`;
+    }
 
     const { initFlutterwavePayment } = await import("@/lib/flutterwave.server");
     const { link } = await initFlutterwavePayment({
@@ -189,7 +210,8 @@ export const verifyWalletTopUp = createServerFn({ method: "POST" })
     const { verifyFlutterwavePayment } = await import("@/lib/flutterwave.server");
     const result = await verifyFlutterwavePayment(data.transaction_id);
 
-    if (result.status !== "successful") {
+    const statusLower = (result.status || "").toLowerCase();
+    if (statusLower !== "successful" && statusLower !== "completed") {
       throw new Error(`Payment ${result.status}. No funds were added.`);
     }
     if (result.tx_ref !== data.tx_ref) {
@@ -200,7 +222,19 @@ export const verifyWalletTopUp = createServerFn({ method: "POST" })
     }
 
     const metaProfileId = typeof result.meta?.profile_id === "string" ? (result.meta.profile_id as string) : undefined;
-    const profileId = sessionProfileId ?? metaProfileId;
+    let profileId = sessionProfileId ?? metaProfileId;
+
+    // Fallback: if session cookie was lost on cross-site redirect and meta is missing, resolve from tx_ref prefix
+    if (!profileId && /^FX-TOPUP-[0-9a-f]{8}-\d+$/i.test(data.tx_ref)) {
+      const prefix = data.tx_ref.split("-")[2].toLowerCase();
+      const { data: matches } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .like("id", `${prefix}%`)
+        .limit(2);
+      if (matches && matches.length === 1) profileId = matches[0].id as string;
+    }
+
     if (!profileId) {
       throw new Error("Could not identify the wallet to credit. Please sign in and try again.");
     }

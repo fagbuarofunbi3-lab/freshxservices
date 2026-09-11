@@ -52,6 +52,7 @@ export async function initFlutterwavePayment(opts: FlwInitOptions): Promise<{ li
       Authorization: `Bearer ${secretKey()}`,
       "Content-Type": "application/json",
     },
+    signal: AbortSignal.timeout(15000),
     body: JSON.stringify({
       tx_ref: opts.tx_ref,
       amount: opts.amount,
@@ -85,6 +86,7 @@ export type FlwVerifyResult = {
 export async function verifyFlutterwavePayment(transactionId: string | number): Promise<FlwVerifyResult> {
   const res = await fetch(`${FLW_BASE}/transactions/${transactionId}/verify`, {
     headers: { Authorization: `Bearer ${secretKey()}` },
+    signal: AbortSignal.timeout(15000),
   });
   const json = (await res.json()) as {
     status: string;

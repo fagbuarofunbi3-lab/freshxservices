@@ -14,7 +14,9 @@ import { naira } from "@/lib/format";
 const SearchSchema = z.object({
   status: z.coerce.string().optional(),
   tx_ref: z.coerce.string().optional(),
+  txRef: z.coerce.string().optional(),
   transaction_id: z.coerce.string().optional(),
+  id: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/wallet-verify")({
@@ -40,12 +42,16 @@ function WalletVerifyPage() {
     if (ran.current) return;
     ran.current = true;
     (async () => {
-      if (search.status === "cancelled" || search.status === "failed") {
+      const status = (search.status || "").toLowerCase();
+      const txRef = search.tx_ref || search.txRef;
+      const txId = search.transaction_id || search.id;
+
+      if (status === "cancelled" || status === "failed") {
         setState("cancelled");
         setMessage("Payment was cancelled. No funds were added.");
         return;
       }
-      if (!search.transaction_id || !search.tx_ref) {
+      if (!txId || !txRef) {
         setState("error");
         setMessage("Missing transaction details from Flutterwave.");
         return;
@@ -55,7 +61,7 @@ function WalletVerifyPage() {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const res = await verify({
-            data: { transaction_id: search.transaction_id, tx_ref: search.tx_ref },
+            data: { transaction_id: String(txId), tx_ref: String(txRef) },
           });
           await Promise.all([invalidateMe(), qc.invalidateQueries({ queryKey: ["wallet-tx"] })]);
           if (res.amount) setAmount(res.amount);
