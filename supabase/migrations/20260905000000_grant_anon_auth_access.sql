@@ -10,6 +10,10 @@ GRANT SELECT, INSERT, UPDATE ON public.profiles TO anon;
 -- referral_codes: signup reads and updates referral usage counts
 GRANT SELECT, UPDATE ON public.referral_codes TO anon;
 
+-- functions: grant execute on password functions to anon
+GRANT EXECUTE ON FUNCTION public.crypt_password(text) TO anon;
+GRANT EXECUTE ON FUNCTION public.verify_password(text, text) TO anon;
+
 -- Remove any existing restrictive policies on profiles that would block the anon role
 DROP POLICY IF EXISTS "Deny all direct client access" ON public.profiles;
 DROP POLICY IF EXISTS "Deny direct client access to profiles" ON public.profiles;

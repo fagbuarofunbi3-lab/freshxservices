@@ -35,7 +35,7 @@ export const getContactWhatsapp = createServerFn({ method: "GET" }).handler(asyn
 });
 
 export const adminUpdateContactWhatsapp = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ number: z.string().trim().min(7).max(20) }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -75,7 +75,7 @@ export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         video_url: z.string().trim().max(500).default(""),
@@ -99,7 +99,7 @@ export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
 const SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 year
 
 export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         kind: z.enum(["video", "image"]),
@@ -120,7 +120,7 @@ export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
   });
 
 export const adminFinalizeMediaUpload = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ path: z.string().trim().min(1).max(300) }).parse(input))
+  .validator((input) => z.object({ path: z.string().trim().min(1).max(300) }).parse(input))
   .handler(async ({ data }) => {
     await requireAdmin();
     const { data: signed, error } = await supabaseAdmin

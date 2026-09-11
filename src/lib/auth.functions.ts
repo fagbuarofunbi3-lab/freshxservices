@@ -11,16 +11,19 @@ import { verifyPasswordResetToken } from "@/lib/password-reset.server";
 const PhoneSchema = z
   .string()
   .trim()
-  .min(10)
+  .min(7, "Enter your WhatsApp number")
   .max(20)
   .transform((raw) => {
     const digits = raw.replace(/\D/g, "");
+    // Already has country code 234
     if (digits.startsWith("234")) return `+${digits}`;
+    // Nigerian local format starting with 0
     if (digits.startsWith("0")) return `+234${digits.slice(1)}`;
+    // Plain local digits e.g. 8012345678
     return `+234${digits}`;
   })
-  .refine((n) => /^\+234[789]\d{9}$/.test(n), {
-    message: "Enter a valid Nigerian WhatsApp number",
+  .refine((n) => /^\+234[0-9]\d{9}$/.test(n), {
+    message: "Enter a valid Nigerian WhatsApp number (e.g. 0812 345 6789)",
   });
 
 const NameSchema = z.string().trim().min(2).max(80);
@@ -49,7 +52,7 @@ async function verifyPassword(plain: string, hash: string): Promise<boolean> {
 }
 
 export const signUp = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         full_name: NameSchema,
@@ -137,7 +140,7 @@ export const signUp = createServerFn({ method: "POST" })
 
 
 export const logIn = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         whatsapp_number: PhoneSchema,
@@ -146,16 +149,24 @@ export const logIn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    // DEBUG: log the transformed number so we can verify format vs DB
+    console.log("[login] looking up number:", data.whatsapp_number);
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
       .select("id, password_hash, role")
       .eq("whatsapp_number", data.whatsapp_number)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!profile) throw new Error("Invalid WhatsApp number or password");
+    if (error) {
+      console.error("[login] DB error:", error.message);
+      throw new Error(error.message);
+    }
+    if (!profile) {
+      console.warn("[login] no profile found for:", data.whatsapp_number);
+      throw new Error("No account found for that WhatsApp number. Check the number or sign up.");
+    }
 
     const ok = await verifyPassword(data.password, profile.password_hash);
-    if (!ok) throw new Error("Invalid WhatsApp number or password");
+    if (!ok) throw new Error("Incorrect password. Try again or use Forgot password.");
 
     const session = await getFreshXSession();
     await session.update({ profileId: profile.id });
@@ -194,7 +205,7 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
 const PinSchema = z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits");
 
 export const setTransactionPin = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         new_pin: PinSchema,
@@ -230,7 +241,7 @@ export const setTransactionPin = createServerFn({ method: "POST" })
   });
 
 export const verifyTransactionPin = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ pin: PinSchema }).parse(input))
+  .validator((input) => z.object({ pin: PinSchema }).parse(input))
   .handler(async ({ data }) => {
     const session = await getFreshXSession();
     const profileId = session.data?.profileId;
@@ -247,7 +258,7 @@ export const verifyTransactionPin = createServerFn({ method: "POST" })
   });
 
 export const updateProfile = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         full_name: NameSchema.optional(),
@@ -304,7 +315,7 @@ export const updateProfile = createServerFn({ method: "POST" })
 // Password recovery: verify ownership using WhatsApp number + email pair, then set a new password.
 // This is a basic recovery for MVP — no email send. Both must match the same account.
 export const resetPasswordWithEmail = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         whatsapp_number: PhoneSchema,
@@ -334,7 +345,7 @@ export const resetPasswordWithEmail = createServerFn({ method: "POST" })
   });
 
 export const requestPasswordResetEmail = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         whatsapp_number: PhoneSchema,
@@ -369,7 +380,7 @@ export const requestPasswordResetEmail = createServerFn({ method: "POST" })
 
 export const resetPasswordWithVerifiedEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ new_password: PasswordSchema }).parse(input))
+  .validator((input) => z.object({ new_password: PasswordSchema }).parse(input))
   .handler(async ({ data, context }) => {
     const email = String((context.claims as { email?: unknown }).email ?? "").trim().toLowerCase();
     if (!email) throw new Error("Could not verify your email. Open the reset link from your email again.");
@@ -388,7 +399,7 @@ export const resetPasswordWithVerifiedEmail = createServerFn({ method: "POST" })
   });
 
 export const resetPasswordWithToken = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         token: z.string().min(10).max(1000),
@@ -445,7 +456,7 @@ export const requestTransactionPinReset = createServerFn({ method: "POST" }).han
 
 export const resetTransactionPinWithVerifiedEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ new_pin: PinSchema }).parse(input))
+  .validator((input) => z.object({ new_pin: PinSchema }).parse(input))
   .handler(async ({ data, context }) => {
     const email = String((context.claims as { email?: unknown }).email ?? "").trim().toLowerCase();
     if (!email) throw new Error("Could not verify your email. Open the reset link from your email again.");
@@ -464,7 +475,7 @@ export const resetTransactionPinWithVerifiedEmail = createServerFn({ method: "PO
   });
 
 export const resetTransactionPinWithToken = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         token: z.string().min(10).max(1000),
