@@ -1,22 +1,11 @@
-// Central API client connecting FreshX directly to the Go serverless MongoDB backend.
+// Central API client — connects the browser directly to the Go serverless MongoDB backend.
+// No proxies, no server functions, no middlemen.
 
-let globalServerEnv: any = null;
+const BACKEND_URL =
+  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_BACKEND_URL) ||
+  "https://freshxbackend.vercel.app";
 
-export function setServerEnv(env: any) {
-  if (env && typeof env === "object") {
-    globalServerEnv = env;
-  }
-}
-
-export const getBackendUrl = () => {
-  const url =
-    globalServerEnv?.BACKEND_URL ||
-    globalServerEnv?.VITE_BACKEND_URL ||
-    (typeof process !== "undefined" && (process.env?.BACKEND_URL || process.env?.VITE_BACKEND_URL)) ||
-    (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_BACKEND_URL) ||
-    "https://freshxbackend.vercel.app";
-  return String(url).replace(/\/+$/, "");
-};
+export const getBackendUrl = () => String(BACKEND_URL).replace(/\/+$/, "");
 
 export class ApiError extends Error {
   status: number;
@@ -31,29 +20,23 @@ export class ApiError extends Error {
 }
 
 export function getAuthToken(): string | null {
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("freshx_token");
-    if (local) return local;
-    const match = document.cookie.match(/(?:^|;\s*)freshx_token=([^;]+)/);
-    if (match) return decodeURIComponent(match[1]);
-  }
+  const local = localStorage.getItem("freshx_token");
+  if (local) return local;
+  const match = document.cookie.match(/(?:^|;\s*)freshx_token=([^;]+)/);
+  if (match) return decodeURIComponent(match[1]);
   return null;
 }
 
 export function saveAuthSession(user: any, token: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("freshx_token", token);
-    localStorage.setItem("freshx_user", JSON.stringify(user));
-    document.cookie = `freshx_token=${encodeURIComponent(token)}; path=/; max-age=5184000; SameSite=Lax`;
-  }
+  localStorage.setItem("freshx_token", token);
+  localStorage.setItem("freshx_user", JSON.stringify(user));
+  document.cookie = `freshx_token=${encodeURIComponent(token)}; path=/; max-age=5184000; SameSite=Lax`;
 }
 
 export function clearAuthSession() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("freshx_token");
-    localStorage.removeItem("freshx_user");
-    document.cookie = `freshx_token=; path=/; max-age=0; SameSite=Lax`;
-  }
+  localStorage.removeItem("freshx_token");
+  localStorage.removeItem("freshx_user");
+  document.cookie = `freshx_token=; path=/; max-age=0; SameSite=Lax`;
 }
 
 interface RequestOptions extends RequestInit {
