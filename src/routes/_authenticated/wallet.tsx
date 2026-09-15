@@ -20,18 +20,10 @@ function WalletPage() {
     queryFn: () => listTransactions(),
   });
   const [amount, setAmount] = useState<number | "">("");
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
 
-  // Auto-fill receipt email from user profile if available
-  useEffect(() => {
-    if (me?.email && !email) {
-      setEmail(me.email);
-    }
-  }, [me?.email]);
-
-  // If user navigates back from Flutterwave, unfreeze button
+  // If user navigates back from payment, unfreeze button
   useEffect(() => {
     const onFocus = () => setLoading(false);
     window.addEventListener("focus", onFocus);
@@ -56,9 +48,9 @@ function WalletPage() {
   async function onTopUp() {
     const amt = typeof amount === "number" ? amount : Number(amount);
     if (!amt || amt < 500) return toast.error("Minimum top-up is ₦500");
-    const targetEmail = (email || me?.email || "").trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail))
-      return toast.error("Enter the email to receive your payment receipt");
+    const targetEmail = me?.email?.trim();
+    if (!targetEmail)
+      return toast.error("No email on your account — add one in Settings first");
     setLoading(true);
     try {
       const redirectUrl = `${window.location.origin}/wallet-verify`;
@@ -106,7 +98,7 @@ function WalletPage() {
       <section className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-xl">Top up your wallet</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pay securely with card, bank transfer, USSD or Opay through Flutterwave.
+          Pay securely with card, bank transfer, USSD or Opay.
           Funds appear in your wallet immediately after payment.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
@@ -134,22 +126,6 @@ function WalletPage() {
           />
         </div>
 
-
-        <div className="mt-4">
-          <label className="block text-sm">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              Email for receipt
-            </span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="mt-1 w-full max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-        </div>
-
         <p className="mt-3 text-xs text-muted-foreground">
           Have a promo code? Enter it when you place a laundry order — not here.
         </p>
@@ -159,7 +135,7 @@ function WalletPage() {
           disabled={loading}
           className="mt-5 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Redirecting…" : `Pay ${naira(amount)} with Flutterwave`}
+          {loading ? "Redirecting…" : "Pay"}
         </button>
       </section>
 
