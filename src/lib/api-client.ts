@@ -1,9 +1,12 @@
 // Central API client — connects the browser directly to the Go serverless MongoDB backend.
 // No proxies, no server functions, no middlemen.
 
-const BACKEND_URL =
+const RAW_BACKEND_URL =
   (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_BACKEND_URL) ||
   "https://freshxbackend.vercel.app";
+
+// Auto-correct common typos in environment variable (e.g. freshxbaceknd -> freshxbackend)
+const BACKEND_URL = String(RAW_BACKEND_URL).replace("freshxbaceknd", "freshxbackend");
 
 export const getBackendUrl = () => String(BACKEND_URL).replace(/\/+$/, "");
 
