@@ -49,7 +49,7 @@ function NotFound() {
   );
 }
 
-function ErrorView({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorView({ error, reset }: { error: any; reset: () => void }) {
   const router = useRouter();
 
   async function tryAgain() {
