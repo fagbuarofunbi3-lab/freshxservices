@@ -71,14 +71,14 @@ function defaultFrom(): string {
   // to the Resend account owner's verified email, which is where our owner
   // notification address is set up. Override with RESEND_FROM_EMAIL only if
   // a verified domain is configured.
-  return process.env.RESEND_FROM_EMAIL ?? "FreshX Orders <onboarding@resend.dev>";
+  return process.env.RESEND_FROM_EMAIL ?? "FreshX Orders <support@freshxservices.com.ng>";
 }
 
 function ownerFrom(): string {
   // Owner order emails always go to OWNER_NOTIFICATION_EMAIL, which is the
   // Resend account owner. Using onboarding@resend.dev guarantees delivery
   // without needing domain verification.
-  return "FreshX Orders <onboarding@resend.dev>";
+  return "FreshX Orders <support@freshxservices.com.ng>";
 }
 
 function renderOrderEmail(p: OrderEmailPayload): { subject: string; html: string; text: string } {

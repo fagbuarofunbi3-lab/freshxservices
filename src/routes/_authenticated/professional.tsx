@@ -306,7 +306,7 @@ function ProfessionalDashboard() {
         </div>
 
         <div className="space-y-3">
-          {pro.items.map((it) => (
+          {pro.items.map((it: any) => (
             <ItemRow
               key={it.id}
               value={{

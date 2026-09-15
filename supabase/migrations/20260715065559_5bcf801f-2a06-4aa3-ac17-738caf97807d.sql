@@ -1,1 +1,0 @@
-ALTER TABLE public.professionals ADD COLUMN IF NOT EXISTS logo_url text;

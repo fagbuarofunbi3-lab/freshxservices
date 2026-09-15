@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ImageIcon, Phone, Video, Upload, X, ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { adminSearchUsers, adminSetUserRole } from "@/lib/admin.functions";
 import {
   getContactWhatsapp,
@@ -26,11 +25,14 @@ async function uploadFile(
   finalizeFn: (args: { data: { path: string } }) => Promise<{ url: string }>,
 ): Promise<string> {
   const ext = (file.name.split(".").pop() || (kind === "video" ? "mp4" : "jpg")).toLowerCase();
-  const { path, token } = await signFn({ data: { kind, ext } });
-  const { error } = await supabase.storage.from("site-media").uploadToSignedUrl(path, token, file, {
-    contentType: file.type || undefined,
-  });
-  if (error) throw new Error(error.message);
+  const { path } = await signFn({ data: { kind, ext } });
+  if (path.startsWith("http")) {
+    await fetch(path, {
+      method: "PUT",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: file,
+    });
+  }
   const { url } = await finalizeFn({ data: { path } });
   return url;
 }

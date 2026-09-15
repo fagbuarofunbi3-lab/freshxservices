@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { resetTransactionPinWithToken, resetTransactionPinWithVerifiedEmail } from "@/lib/auth.functions";
 import { AuthShell, Field } from "./signup";
 
@@ -23,32 +22,12 @@ function ResetPinPage() {
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkingLink, setCheckingLink] = useState(isBuiltInEmailLink);
+  const [checkingLink, setCheckingLink] = useState(false);
 
   useEffect(() => {
-    if (!isBuiltInEmailLink) return;
-    let cancelled = false;
-    async function prepareEmailSession() {
-      try {
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get("code");
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (!error) {
-            url.searchParams.delete("code");
-            window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-          }
-        } else {
-          await supabase.auth.getSession();
-        }
-      } finally {
-        if (!cancelled) setCheckingLink(false);
-      }
+    if (isBuiltInEmailLink) {
+      setCheckingLink(false);
     }
-    void prepareEmailSession();
-    return () => {
-      cancelled = true;
-    };
   }, [isBuiltInEmailLink]);
 
   async function onSubmit(e: React.FormEvent) {

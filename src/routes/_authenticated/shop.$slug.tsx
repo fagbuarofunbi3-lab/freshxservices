@@ -275,7 +275,7 @@ function ShopPage() {
         <section className="space-y-3">
           <h2 className="font-display text-xl">What we offer</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {shop.items.map((it) => (
+            {shop.items.map((it: any) => (
               <div
                 key={it.id}
                 className="overflow-hidden rounded-2xl border border-border bg-card"
@@ -348,7 +348,7 @@ function ShopPage() {
           <p className="text-sm text-muted-foreground">No reviews yet.</p>
         ) : (
           <ul className="space-y-3">
-            {shop.reviews.map((r) => (
+            {shop.reviews.map((r: any) => (
               <li key={r.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium">{r.reviewer_name}</div>

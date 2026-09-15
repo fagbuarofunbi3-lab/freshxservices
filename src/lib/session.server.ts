@@ -1,7 +1,11 @@
 // Server-only session helpers. Stores the signed-in profile id in an encrypted cookie.
 import { useSession } from "@tanstack/react-start/server";
 
-export type FreshXSession = { profileId?: string };
+export type FreshXSession = {
+  profileId?: string;
+  token?: string;
+  role?: string;
+};
 
 // Long static password (>= 32 chars) used to encrypt the session cookie.
 // Tradeoff for MVP: hardcoded; rotating later means existing sessions invalidate.

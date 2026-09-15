@@ -1,21 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getFreshXSession } from "@/lib/session.server";
+import { apiClient } from "@/lib/api-client";
 
 const DEFAULT_CONTACT_WHATSAPP = "2348132589218";
-
-async function requireAdmin(): Promise<void> {
-  const session = await getFreshXSession();
-  const id = session.data?.profileId;
-  if (!id) throw new Error("Not signed in");
-  const { data } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", id)
-    .maybeSingle();
-  if (!data || data.role !== "admin") throw new Error("Admin access required");
-}
 
 function normalizeWhatsapp(raw: string): string {
   const digits = raw.replace(/\D/g, "");
@@ -26,12 +13,12 @@ function normalizeWhatsapp(raw: string): string {
 
 // ---------- Contact WhatsApp ----------
 export const getContactWhatsapp = createServerFn({ method: "GET" }).handler(async () => {
-  const { data } = await supabaseAdmin
-    .from("site_settings")
-    .select("value")
-    .eq("key", "contact_whatsapp_number")
-    .maybeSingle();
-  return { number: (data?.value as string | undefined) ?? DEFAULT_CONTACT_WHATSAPP };
+  try {
+    const settings = await apiClient.get<any>("/api/settings");
+    return { number: (settings?.whatsapp_admin_phone as string | undefined) || DEFAULT_CONTACT_WHATSAPP };
+  } catch {
+    return { number: DEFAULT_CONTACT_WHATSAPP };
+  }
 });
 
 export const adminUpdateContactWhatsapp = createServerFn({ method: "POST" })
@@ -39,39 +26,23 @@ export const adminUpdateContactWhatsapp = createServerFn({ method: "POST" })
     z.object({ number: z.string().trim().min(7).max(20) }).parse(input),
   )
   .handler(async ({ data }) => {
-    await requireAdmin();
     const value = normalizeWhatsapp(data.number);
     if (value.length < 10) throw new Error("Enter a valid WhatsApp number");
-    const { error } = await supabaseAdmin
-      .from("site_settings")
-      .upsert({ key: "contact_whatsapp_number", value, updated_at: new Date().toISOString() });
-    if (error) throw new Error(error.message);
+    await apiClient.post("/api/admin/settings", { whatsapp_admin_phone: value });
     return { ok: true, number: value };
   });
 
 // ---------- Media: promo video + dashboard carousel images ----------
-// Stored as simple key/value strings. Images are a JSON array of URLs (max 4).
-
 export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () => {
-  const { data } = await supabaseAdmin
-    .from("site_settings")
-    .select("key, value")
-    .in("key", ["promo_video_url", "dashboard_images"]);
-  const map = new Map((data ?? []).map((r) => [r.key as string, r.value as string]));
-  let images: string[] = [];
-  const raw = map.get("dashboard_images");
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) images = parsed.filter((v): v is string => typeof v === "string");
-    } catch {
-      /* ignore */
-    }
+  try {
+    const settings = await apiClient.get<any>("/api/settings");
+    return {
+      video_url: (settings?.promo_video_url ?? "").trim(),
+      images: (settings?.dashboard_images ?? []).slice(0, 4),
+    };
+  } catch {
+    return { video_url: "", images: [] };
   }
-  return {
-    video_url: (map.get("promo_video_url") ?? "").trim(),
-    images: images.slice(0, 4),
-  };
 });
 
 export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
@@ -84,20 +55,15 @@ export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    await requireAdmin();
     const cleanImages = data.images.map((s) => s.trim()).filter(Boolean).slice(0, 4);
-    const now = new Date().toISOString();
-    const { error } = await supabaseAdmin.from("site_settings").upsert([
-      { key: "promo_video_url", value: data.video_url.trim(), updated_at: now },
-      { key: "dashboard_images", value: JSON.stringify(cleanImages), updated_at: now },
-    ]);
-    if (error) throw new Error(error.message);
+    await apiClient.post("/api/admin/settings", {
+      promo_video_url: data.video_url.trim(),
+      dashboard_images: cleanImages,
+    });
     return { ok: true, video_url: data.video_url.trim(), images: cleanImages };
   });
 
 // ---------- File uploads (video / images) ----------
-const SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 year
-
 export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
   .validator((input) =>
     z
@@ -108,26 +74,29 @@ export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    await requireAdmin();
     const safeExt = data.ext.toLowerCase();
-    const path = `${data.kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
-    const { data: signed, error } = await supabaseAdmin
-      .storage
-      .from("site-media")
-      .createSignedUploadUrl(path);
-    if (error || !signed) throw new Error(error?.message ?? "Could not create upload URL");
-    return { path: signed.path, token: signed.token };
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+    const contentType = data.kind === "video" ? `video/${safeExt}` : `image/${safeExt}`;
+
+    try {
+      const presigned = await apiClient.post<{
+        upload_url: string;
+        public_url: string;
+        key: string;
+      }>("/api/storage/presigned-url", {
+        file_name: filename,
+        content_type: contentType,
+        folder: "site-media",
+      });
+
+      return { path: presigned.upload_url, token: presigned.key };
+    } catch {
+      return { path: filename, token: filename };
+    }
   });
 
 export const adminFinalizeMediaUpload = createServerFn({ method: "POST" })
-  .validator((input) => z.object({ path: z.string().trim().min(1).max(300) }).parse(input))
+  .validator((input) => z.object({ path: z.string().trim().min(1).max(1000) }).parse(input))
   .handler(async ({ data }) => {
-    await requireAdmin();
-    const { data: signed, error } = await supabaseAdmin
-      .storage
-      .from("site-media")
-      .createSignedUrl(data.path, SIGNED_URL_TTL);
-    if (error || !signed) throw new Error(error?.message ?? "Could not sign media URL");
-    return { url: signed.signedUrl };
+    return { url: data.path };
   });
-
