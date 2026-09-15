@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useServerFn } from "@/lib/create-fn";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
+import { useServerFn } from "@/lib/create-fn";
 import { useQuery } from "@tanstack/react-query";
 import { Home, ShoppingBag, Wallet, Settings, Plus, LogOut, Shield, GraduationCap, MessageCircle } from "lucide-react";
 import { getMe, logOut } from "@/lib/auth.functions";

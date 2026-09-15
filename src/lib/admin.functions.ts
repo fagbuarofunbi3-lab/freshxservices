@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createFn } from "@/lib/create-fn";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
@@ -13,7 +13,7 @@ const ServiceItemCategorySchema = z.enum([
 ]);
 
 // ============ Orders queue ============
-export const adminListOrders = createServerFn({ method: "GET" })
+export const adminListOrders = createFn({ method: "GET" })
   .inputValidator((input) =>
     z
       .object({
@@ -59,7 +59,7 @@ export const adminListOrders = createServerFn({ method: "GET" })
     });
   });
 
-export const adminUpdateOrderStatus = createServerFn({ method: "POST" })
+export const adminUpdateOrderStatus = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -77,7 +77,7 @@ export const adminUpdateOrderStatus = createServerFn({ method: "POST" })
   });
 
 // ============ Service items CRUD ============
-export const adminListServiceItems = createServerFn({ method: "GET" }).handler(async () => {
+export const adminListServiceItems = createFn({ method: "GET" }).handler(async () => {
   const items = await apiClient.get<any[]>("/api/admin/services");
   return (items ?? []).map((r) => ({
     id: (r.id || r._id) as string,
@@ -88,7 +88,7 @@ export const adminListServiceItems = createServerFn({ method: "GET" }).handler(a
   }));
 });
 
-export const adminUpsertServiceItem = createServerFn({ method: "POST" })
+export const adminUpsertServiceItem = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -105,7 +105,7 @@ export const adminUpsertServiceItem = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const adminDeleteServiceItem = createServerFn({ method: "POST" })
+export const adminDeleteServiceItem = createFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     await apiClient.delete(`/api/admin/services/${data.id}`);
@@ -113,7 +113,7 @@ export const adminDeleteServiceItem = createServerFn({ method: "POST" })
   });
 
 // ============ Promo codes CRUD ============
-export const adminListPromoCodes = createServerFn({ method: "GET" }).handler(async () => {
+export const adminListPromoCodes = createFn({ method: "GET" }).handler(async () => {
   const promos = await apiClient.get<any[]>("/api/admin/promos");
   return (promos ?? []).map((r) => ({
     id: (r.id || r._id) as string,
@@ -128,7 +128,7 @@ export const adminListPromoCodes = createServerFn({ method: "GET" }).handler(asy
   }));
 });
 
-export const adminUpsertPromoCode = createServerFn({ method: "POST" })
+export const adminUpsertPromoCode = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -157,14 +157,14 @@ export const adminUpsertPromoCode = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const adminDeletePromoCode = createServerFn({ method: "POST" })
+export const adminDeletePromoCode = createFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     await apiClient.delete(`/api/admin/promos/${data.id}`);
     return { ok: true };
   });
 
-export const adminUpsertCustomerPromo = createServerFn({ method: "POST" })
+export const adminUpsertCustomerPromo = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -188,7 +188,7 @@ export const adminUpsertCustomerPromo = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const adminGetCustomerPromo = createServerFn({ method: "GET" })
+export const adminGetCustomerPromo = createFn({ method: "GET" })
   .inputValidator((input) => z.object({ customer_id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     try {
@@ -209,7 +209,7 @@ export const adminGetCustomerPromo = createServerFn({ method: "GET" })
   });
 
 // ============ Customers directory ============
-export const adminListCustomers = createServerFn({ method: "GET" }).handler(async () => {
+export const adminListCustomers = createFn({ method: "GET" }).handler(async () => {
   const customers = await apiClient.get<any[]>("/api/admin/customers");
   return (customers ?? []).map((c) => ({
     id: (c.id || c._id) as string,
@@ -221,7 +221,7 @@ export const adminListCustomers = createServerFn({ method: "GET" }).handler(asyn
   }));
 });
 
-export const adminCreditWallet = createServerFn({ method: "POST" })
+export const adminCreditWallet = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -237,7 +237,7 @@ export const adminCreditWallet = createServerFn({ method: "POST" })
   });
 
 // ============ Reports / Analytics ============
-export const adminReports = createServerFn({ method: "GET" }).handler(async () => {
+export const adminReports = createFn({ method: "GET" }).handler(async () => {
   const reports = await apiClient.get<any>("/api/admin/reports");
   const totalRev = Number(reports.total_revenue ?? 0);
   const totalOrders = Number(reports.total_orders ?? 0);
@@ -263,7 +263,7 @@ export const adminReports = createServerFn({ method: "GET" }).handler(async () =
   };
 });
 
-export const adminMonthlyReports = createServerFn({ method: "GET" })
+export const adminMonthlyReports = createFn({ method: "GET" })
   .inputValidator((input) =>
     z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
   )
@@ -282,7 +282,7 @@ export const adminMonthlyReports = createServerFn({ method: "GET" })
   });
 
 // ============ Referral program admin ============
-export const adminListReferralCodes = createServerFn({ method: "GET" }).handler(async () => {
+export const adminListReferralCodes = createFn({ method: "GET" }).handler(async () => {
   const codes = await apiClient.get<any[]>("/api/admin/referrals");
   return (codes ?? []).map((c) => ({
     id: (c.id || c._id) as string,
@@ -296,7 +296,7 @@ export const adminListReferralCodes = createServerFn({ method: "GET" }).handler(
   }));
 });
 
-export const adminUpsertReferralCode = createServerFn({ method: "POST" })
+export const adminUpsertReferralCode = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -319,14 +319,14 @@ export const adminUpsertReferralCode = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const adminDeleteReferralCode = createServerFn({ method: "POST" })
+export const adminDeleteReferralCode = createFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     await apiClient.delete(`/api/admin/referrals/${data.id}`);
     return { ok: true };
   });
 
-export const adminGetCustomerReferral = createServerFn({ method: "GET" })
+export const adminGetCustomerReferral = createFn({ method: "GET" })
   .inputValidator((input) => z.object({ customer_id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     try {
@@ -344,7 +344,7 @@ export const adminGetCustomerReferral = createServerFn({ method: "GET" })
     }
   });
 
-export const adminUpsertCustomerReferral = createServerFn({ method: "POST" })
+export const adminUpsertCustomerReferral = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -360,7 +360,7 @@ export const adminUpsertCustomerReferral = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const adminSearchUsers = createServerFn({ method: "GET" })
+export const adminSearchUsers = createFn({ method: "GET" })
   .inputValidator((input) =>
     z
       .object({
@@ -382,7 +382,7 @@ export const adminSearchUsers = createServerFn({ method: "GET" })
     }));
   });
 
-export const adminSetUserRole = createServerFn({ method: "POST" })
+export const adminSetUserRole = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({

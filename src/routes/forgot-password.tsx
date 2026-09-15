@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
+import { useServerFn } from "@/lib/create-fn";
 import { useState } from "react";
 import { toast } from "sonner";
 import { requestPasswordResetEmail } from "@/lib/auth.functions";

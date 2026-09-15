@@ -1,8 +1,8 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { createFn } from "@/lib/create-fn";
 
-export const listServiceItems = createServerFn({ method: "GET" }).handler(async () => {
+export const listServiceItems = createFn({ method: "GET" }).handler(async () => {
   const data = await apiClient.get<any[]>("/api/services");
   return (data ?? []).map((r) => ({
     id: r.id as string,
@@ -34,7 +34,7 @@ const CreateOrderSchema = z.object({
   transaction_pin: z.string().regex(/^\d{4}$/, "Enter your 4-digit PIN"),
 });
 
-export const applyPromo = createServerFn({ method: "POST" })
+export const applyPromo = createFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({ code: z.string().trim().min(1).max(40), subtotal: z.number().min(0) }).parse(input),
   )
@@ -66,7 +66,7 @@ export const applyPromo = createServerFn({ method: "POST" })
     }
   });
 
-export const createOrder = createServerFn({ method: "POST" })
+export const createOrder = createFn({ method: "POST" })
   .inputValidator((input) => CreateOrderSchema.parse(input))
   .handler(async ({ data }) => {
     const res = await apiClient.post<{
@@ -83,7 +83,7 @@ export const createOrder = createServerFn({ method: "POST" })
     };
   });
 
-export const notifyCleaningRequest = createServerFn({ method: "POST" })
+export const notifyCleaningRequest = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -112,12 +112,12 @@ export const notifyCleaningRequest = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const listMyOrders = createServerFn({ method: "GET" }).handler(async () => {
+export const listMyOrders = createFn({ method: "GET" }).handler(async () => {
   const orders = await apiClient.get<any[]>("/api/orders");
   return (orders ?? []).map(serializeOrder);
 });
 
-export const getOrder = createServerFn({ method: "GET" })
+export const getOrder = createFn({ method: "GET" })
   .inputValidator((input) => z.object({ id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     try {

@@ -1,7 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
 import { apiClient } from "@/lib/api-client";
+import { createFn } from "@/lib/create-fn";
 
-export const generateMyReferralCode = createServerFn({ method: "POST" }).handler(
+export const generateMyReferralCode = createFn({ method: "POST" }).handler(
   async (): Promise<{ code: string; created: boolean }> => {
     const res = await apiClient.post<{ code: string; created: boolean }>("/api/referrals/my-code");
     return res;
@@ -28,7 +28,7 @@ export type LeaderboardResult = {
   eligible: boolean;
 };
 
-export const getReferralLeaderboard = createServerFn({ method: "GET" }).handler(
+export const getReferralLeaderboard = createFn({ method: "GET" }).handler(
   async (): Promise<LeaderboardResult> => {
     const res = await apiClient.get<LeaderboardResult>("/api/referrals/leaderboard");
     return res;

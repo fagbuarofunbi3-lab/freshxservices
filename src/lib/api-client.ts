@@ -1,5 +1,4 @@
-// Central API client connecting FreshX to the Go serverless MongoDB backend.
-import { getFreshXSession } from "@/lib/session.server";
+// Central API client connecting FreshX directly to the Go serverless MongoDB backend.
 
 let globalServerEnv: any = null;
 
@@ -31,6 +30,32 @@ export class ApiError extends Error {
   }
 }
 
+export function getAuthToken(): string | null {
+  if (typeof window !== "undefined") {
+    const local = localStorage.getItem("freshx_token");
+    if (local) return local;
+    const match = document.cookie.match(/(?:^|;\s*)freshx_token=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]);
+  }
+  return null;
+}
+
+export function saveAuthSession(user: any, token: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("freshx_token", token);
+    localStorage.setItem("freshx_user", JSON.stringify(user));
+    document.cookie = `freshx_token=${encodeURIComponent(token)}; path=/; max-age=5184000; SameSite=Lax`;
+  }
+}
+
+export function clearAuthSession() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("freshx_token");
+    localStorage.removeItem("freshx_user");
+    document.cookie = `freshx_token=; path=/; max-age=0; SameSite=Lax`;
+  }
+}
+
 interface RequestOptions extends RequestInit {
   token?: string;
   skipAuth?: boolean;
@@ -49,27 +74,17 @@ export async function apiRequest<T = any>(
     headers.set("Content-Type", "application/json");
   }
 
-  // Attach auth token if available and not skipped
   if (!options.skipAuth) {
-    let token = options.token;
-    if (!token) {
-      try {
-        const session = await getFreshXSession();
-        token = session.data?.token;
-      } catch {
-        // Session not available in this execution context
-      }
-    }
-
+    const token = options.token || getAuthToken();
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
-      headers.set("Cookie", `freshx_token=${token}; token=${token}`);
     }
   }
 
   const res = await fetch(url, {
     ...options,
     headers,
+    credentials: "include",
   });
 
   if (res.status === 204) {

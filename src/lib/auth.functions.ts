@@ -1,9 +1,6 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
-import { getFreshXSession } from "@/lib/session.server";
-import { verifyPinResetToken } from "@/lib/pin-reset.server";
-import { verifyPasswordResetToken } from "@/lib/password-reset.server";
+import { apiClient, saveAuthSession, clearAuthSession, getAuthToken } from "@/lib/api-client";
+import { createFn } from "@/lib/create-fn";
 
 const PhoneSchema = z
   .string()
@@ -27,7 +24,7 @@ const PasswordSchema = z
   .min(8, "Password must be at least 8 characters")
   .max(200);
 
-export const signUp = createServerFn({ method: "POST" })
+export const signUp = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -53,16 +50,11 @@ export const signUp = createServerFn({ method: "POST" })
       referral_code: data.referral_code,
     }, { skipAuth: true });
 
-    const session = await getFreshXSession();
-    await session.update({
-      profileId: res.user.id,
-      token: res.token,
-      role: res.user.role,
-    });
+    saveAuthSession(res.user, res.token);
     return { ok: true };
   });
 
-export const logIn = createServerFn({ method: "POST" })
+export const logIn = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -77,35 +69,23 @@ export const logIn = createServerFn({ method: "POST" })
       password: data.password,
     }, { skipAuth: true });
 
-    const session = await getFreshXSession();
-    await session.update({
-      profileId: res.user.id,
-      token: res.token,
-      role: res.user.role,
-    });
+    saveAuthSession(res.user, res.token);
     return { ok: true, role: res.user.role as "customer" | "admin" };
   });
 
-export const logOut = createServerFn({ method: "POST" }).handler(async () => {
+export const logOut = createFn({ method: "POST" }).handler(async () => {
   try {
     await apiClient.post("/api/auth/logout");
   } catch {
     // Ignore server error on logout
   }
-  const session = await getFreshXSession();
-  await session.clear();
+  clearAuthSession();
   return { ok: true };
 });
 
-export const getMe = createServerFn({ method: "GET" }).handler(async () => {
-  const session = await getFreshXSession();
-  const token = session.data?.token;
-  if (!token) {
-    if (session.data?.profileId) {
-      await session.clear();
-    }
-    return null;
-  }
+export const getMe = createFn({ method: "GET" }).handler(async () => {
+  const token = getAuthToken();
+  if (!token) return null;
 
   try {
     const user = await apiClient.get<any>("/api/auth/me", { token });
@@ -123,13 +103,14 @@ export const getMe = createServerFn({ method: "GET" }).handler(async () => {
       referral_earnings: Number(user.referral_earnings ?? 0),
     };
   } catch {
+    clearAuthSession();
     return null;
   }
 });
 
 const PinSchema = z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits");
 
-export const setTransactionPin = createServerFn({ method: "POST" })
+export const setTransactionPin = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -146,7 +127,7 @@ export const setTransactionPin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const verifyTransactionPin = createServerFn({ method: "POST" })
+export const verifyTransactionPin = createFn({ method: "POST" })
   .validator((input) => z.object({ pin: PinSchema }).parse(input))
   .handler(async ({ data }) => {
     const res = await apiClient.post<{ ok: boolean }>("/api/auth/pin/verify", {
@@ -155,7 +136,7 @@ export const verifyTransactionPin = createServerFn({ method: "POST" })
     return { ok: res.ok };
   });
 
-export const updateProfile = createServerFn({ method: "POST" })
+export const updateProfile = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -172,7 +153,7 @@ export const updateProfile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const resetPasswordWithEmail = createServerFn({ method: "POST" })
+export const resetPasswordWithEmail = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -191,7 +172,7 @@ export const resetPasswordWithEmail = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const requestPasswordResetEmail = createServerFn({ method: "POST" })
+export const requestPasswordResetEmail = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -201,26 +182,9 @@ export const requestPasswordResetEmail = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    try {
-      await apiClient.post("/api/auth/forgot-password", {
-        email: data.email,
-      }, { skipAuth: true });
-    } catch {
-      // Ignore if fallback
-    }
-
-    const { sendBuiltInRecoveryEmail, maskEmail } = await import("@/lib/auth-email-reset.server");
-    try {
-      await sendBuiltInRecoveryEmail({
-        email: data.email,
-        name: "Valued Customer",
-        profileId: data.whatsapp_number,
-        redirectTo: "https://freshxservices.com.ng/reset-password?source=auth",
-        failureMessage: "Could not send the password reset email. Please try again in a few minutes.",
-      });
-    } catch {
-      // Continue
-    }
+    await apiClient.post("/api/auth/forgot-password", {
+      email: data.email,
+    }, { skipAuth: true });
 
     const maskEmailLocal = (email: string) => {
       const [name, domain] = email.split("@");
@@ -228,10 +192,10 @@ export const requestPasswordResetEmail = createServerFn({ method: "POST" })
       return `${name[0]}***${name[name.length - 1]}@${domain}`;
     };
 
-    return { ok: true, masked_email: maskEmail ? maskEmail(data.email) : maskEmailLocal(data.email) };
+    return { ok: true, masked_email: maskEmailLocal(data.email) };
   });
 
-export const resetPasswordWithVerifiedEmail = createServerFn({ method: "POST" })
+export const resetPasswordWithVerifiedEmail = createFn({ method: "POST" })
   .validator((input) =>
     z.object({
       new_password: PasswordSchema,
@@ -246,27 +210,24 @@ export const resetPasswordWithVerifiedEmail = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const resetPasswordWithToken = createServerFn({ method: "POST" })
+export const resetPasswordWithToken = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
-        token: z.string().min(10).max(1000),
+        token: z.string().min(1).max(1000),
         new_password: PasswordSchema,
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const decoded = verifyPasswordResetToken(data.token);
-    if (!decoded) throw new Error("This reset link is invalid or has expired. Request a new one.");
-
     await apiClient.post("/api/auth/reset-password", {
-      profile_id: decoded.profileId,
+      otp: data.token,
       new_password: data.new_password,
     }, { skipAuth: true });
     return { ok: true };
   });
 
-export const requestTransactionPinReset = createServerFn({ method: "POST" }).handler(
+export const requestTransactionPinReset = createFn({ method: "POST" }).handler(
   async () => {
     const me = await apiClient.get<any>("/api/auth/me");
     if (!me || !me.email) {
@@ -275,14 +236,9 @@ export const requestTransactionPinReset = createServerFn({ method: "POST" }).han
       );
     }
 
-    const { sendBuiltInRecoveryEmail, maskEmail } = await import("@/lib/auth-email-reset.server");
-    await sendBuiltInRecoveryEmail({
+    await apiClient.post("/api/auth/forgot-password", {
       email: me.email,
-      name: me.full_name ?? "",
-      profileId: me.id,
-      redirectTo: "https://freshxservices.com.ng/reset-pin?source=auth",
-      failureMessage: "Could not send the reset email. Please try again in a few minutes.",
-    });
+    }, { skipAuth: true });
 
     const maskEmailLocal = (email: string) => {
       const [name, domain] = email.split("@");
@@ -290,11 +246,11 @@ export const requestTransactionPinReset = createServerFn({ method: "POST" }).han
       return `${name[0]}***${name[name.length - 1]}@${domain}`;
     };
 
-    return { ok: true, masked_email: maskEmail ? maskEmail(me.email) : maskEmailLocal(me.email) };
+    return { ok: true, masked_email: maskEmailLocal(me.email) };
   },
 );
 
-export const resetTransactionPinWithVerifiedEmail = createServerFn({ method: "POST" })
+export const resetTransactionPinWithVerifiedEmail = createFn({ method: "POST" })
   .validator((input) => z.object({ new_pin: PinSchema }).parse(input))
   .handler(async ({ data }) => {
     await apiClient.post("/api/auth/pin", {
@@ -303,19 +259,16 @@ export const resetTransactionPinWithVerifiedEmail = createServerFn({ method: "PO
     return { ok: true };
   });
 
-export const resetTransactionPinWithToken = createServerFn({ method: "POST" })
+export const resetTransactionPinWithToken = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
-        token: z.string().min(10).max(1000),
+        token: z.string().min(1).max(1000),
         new_pin: PinSchema,
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const decoded = verifyPinResetToken(data.token);
-    if (!decoded) throw new Error("This reset link is invalid or has expired. Request a new one.");
-
     await apiClient.post("/api/auth/pin", {
       pin: data.new_pin,
     });

@@ -1,9 +1,8 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
-import { getRequestHost } from "@tanstack/react-start/server";
+import { createFn } from "@/lib/create-fn";
 
-export const listTransactions = createServerFn({ method: "GET" }).handler(async () => {
+export const listTransactions = createFn({ method: "GET" }).handler(async () => {
   const data = await apiClient.get<any[]>("/api/wallet/transactions");
   return (data ?? []).map((r) => ({
     id: (r.id || r._id) as string,
@@ -15,7 +14,7 @@ export const listTransactions = createServerFn({ method: "GET" }).handler(async 
   }));
 });
 
-export const previewTopUpPromo = createServerFn({ method: "POST" })
+export const previewTopUpPromo = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -69,7 +68,7 @@ export const previewTopUpPromo = createServerFn({ method: "POST" })
     }
   });
 
-export const initWalletTopUp = createServerFn({ method: "POST" })
+export const initWalletTopUp = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -83,24 +82,11 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     let redirect_url = data.redirect_url;
     if (!redirect_url) {
-      let host = "";
-      try {
-        host = getRequestHost();
-      } catch {
-        // fallback
+      if (typeof window !== "undefined") {
+        redirect_url = `${window.location.origin}/wallet-verify`;
+      } else {
+        redirect_url = "https://freshxservices.com.ng/wallet-verify";
       }
-      if (!host) host = "localhost:8080";
-      const isLocal =
-        host.includes("localhost") ||
-        host.includes("127.0.0.1") ||
-        host.startsWith("10.") ||
-        host.startsWith("192.168.") ||
-        host.startsWith("172.") ||
-        host.includes(":8080") ||
-        host.includes(":5173") ||
-        host.includes(":3000");
-      const proto = isLocal ? "http" : "https";
-      redirect_url = `${proto}://${host}/wallet-verify`;
     }
 
     const res = await apiClient.post<{
@@ -124,7 +110,7 @@ export const initWalletTopUp = createServerFn({ method: "POST" })
     };
   });
 
-export const verifyWalletTopUp = createServerFn({ method: "POST" })
+export const verifyWalletTopUp = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({

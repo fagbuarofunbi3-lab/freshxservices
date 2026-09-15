@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { useServerFn } from "@/lib/create-fn";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";

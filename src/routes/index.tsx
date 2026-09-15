@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { useServerFn } from "@/lib/create-fn";
 import { motion } from "framer-motion";
 import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone, Video } from "lucide-react";
 import { getContactWhatsapp, getSiteMedia } from "@/lib/site-settings.functions";

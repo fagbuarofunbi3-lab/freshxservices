@@ -1,7 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import { getMe } from "@/lib/auth.functions";
+import { createFn } from "@/lib/create-fn";
 
 export const PRO_CATEGORIES = [
   { value: "hairdressing", label: "Hairdressing" },
@@ -20,7 +20,7 @@ const CategorySchema = z.enum([
 ]);
 
 // Upload image using Go backend Cloudflare R2 presigned URL or direct upload
-export const uploadProfessionalImage = createServerFn({ method: "POST" })
+export const uploadProfessionalImage = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -34,12 +34,12 @@ export const uploadProfessionalImage = createServerFn({ method: "POST" })
     const match = data.data_url.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) throw new Error("Please pick a valid image file.");
     const mime = match[1];
-    const b64 = match[2];
-    const buf = Buffer.from(b64, "base64");
     const ext = mime.split("/")[1] || "jpg";
     const filename = data.filename || `pro-${Date.now()}.${ext}`;
 
     try {
+      const blob = await (await fetch(data.data_url)).blob();
+
       // Request presigned URL from Go backend
       const presigned = await apiClient.post<{
         upload_url: string;
@@ -55,7 +55,7 @@ export const uploadProfessionalImage = createServerFn({ method: "POST" })
       await fetch(presigned.upload_url, {
         method: "PUT",
         headers: { "Content-Type": mime },
-        body: buf,
+        body: blob,
       });
 
       return { path: presigned.key, url: presigned.public_url };
@@ -65,7 +65,7 @@ export const uploadProfessionalImage = createServerFn({ method: "POST" })
     }
   });
 
-export const adminPromoteProfessional = createServerFn({ method: "POST" })
+export const adminPromoteProfessional = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -81,7 +81,7 @@ export const adminPromoteProfessional = createServerFn({ method: "POST" })
     return { ok: true, slug: res.slug };
   });
 
-export const adminListProfessionals = createServerFn({ method: "GET" }).handler(
+export const adminListProfessionals = createFn({ method: "GET" }).handler(
   async () => {
     const list = await apiClient.get<any[]>("/api/admin/professionals");
     return (list ?? []).map((p) => ({
@@ -101,14 +101,14 @@ export const adminListProfessionals = createServerFn({ method: "GET" }).handler(
   },
 );
 
-export const adminDeleteProfessional = createServerFn({ method: "POST" })
+export const adminDeleteProfessional = createFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     await apiClient.delete(`/api/admin/professionals/${data.id}`);
     return { ok: true };
   });
 
-export const getMyProfessional = createServerFn({ method: "GET" }).handler(async () => {
+export const getMyProfessional = createFn({ method: "GET" }).handler(async () => {
   try {
     const p = await apiClient.get<any>("/api/professionals/me");
     if (!p) return null;
@@ -144,7 +144,7 @@ export const getMyProfessional = createServerFn({ method: "GET" }).handler(async
   }
 });
 
-export const updateMyProfessional = createServerFn({ method: "POST" })
+export const updateMyProfessional = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -159,7 +159,7 @@ export const updateMyProfessional = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const upsertMyCatalogItem = createServerFn({ method: "POST" })
+export const upsertMyCatalogItem = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -176,14 +176,14 @@ export const upsertMyCatalogItem = createServerFn({ method: "POST" })
     return { ok: true, id: (res.id || res._id) as string };
   });
 
-export const deleteMyCatalogItem = createServerFn({ method: "POST" })
+export const deleteMyCatalogItem = createFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     await apiClient.delete(`/api/professionals/items/${data.id}`);
     return { ok: true };
   });
 
-export const listProfessionalsByCategory = createServerFn({ method: "GET" })
+export const listProfessionalsByCategory = createFn({ method: "GET" })
   .inputValidator((input) => z.object({ category: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     const list = await apiClient.get<any[]>(`/api/professionals?category=${data.category}`);
@@ -213,7 +213,7 @@ export const listProfessionalsByCategory = createServerFn({ method: "GET" })
     });
   });
 
-export const getProfessionalBySlug = createServerFn({ method: "GET" })
+export const getProfessionalBySlug = createFn({ method: "GET" })
   .inputValidator((input) => z.object({ slug: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     try {
@@ -255,7 +255,7 @@ export const getProfessionalBySlug = createServerFn({ method: "GET" })
     }
   });
 
-export const submitReview = createServerFn({ method: "POST" })
+export const submitReview = createFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
@@ -273,7 +273,7 @@ export const submitReview = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const getMyDisplayName = createServerFn({ method: "GET" }).handler(async () => {
+export const getMyDisplayName = createFn({ method: "GET" }).handler(async () => {
   const me = await getMe();
   return me ? { full_name: me.full_name } : null;
 });

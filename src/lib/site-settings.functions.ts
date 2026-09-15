@@ -1,6 +1,6 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { createFn } from "@/lib/create-fn";
 
 const DEFAULT_CONTACT_WHATSAPP = "2348132589218";
 
@@ -12,7 +12,7 @@ function normalizeWhatsapp(raw: string): string {
 }
 
 // ---------- Contact WhatsApp ----------
-export const getContactWhatsapp = createServerFn({ method: "GET" }).handler(async () => {
+export const getContactWhatsapp = createFn({ method: "GET" }).handler(async () => {
   try {
     const settings = await apiClient.get<any>("/api/settings");
     return { number: (settings?.whatsapp_admin_phone as string | undefined) || DEFAULT_CONTACT_WHATSAPP };
@@ -21,7 +21,7 @@ export const getContactWhatsapp = createServerFn({ method: "GET" }).handler(asyn
   }
 });
 
-export const adminUpdateContactWhatsapp = createServerFn({ method: "POST" })
+export const adminUpdateContactWhatsapp = createFn({ method: "POST" })
   .validator((input) =>
     z.object({ number: z.string().trim().min(7).max(20) }).parse(input),
   )
@@ -33,7 +33,7 @@ export const adminUpdateContactWhatsapp = createServerFn({ method: "POST" })
   });
 
 // ---------- Media: promo video + dashboard carousel images ----------
-export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () => {
+export const getSiteMedia = createFn({ method: "GET" }).handler(async () => {
   try {
     const settings = await apiClient.get<any>("/api/settings");
     return {
@@ -45,7 +45,7 @@ export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () =
   }
 });
 
-export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
+export const adminUpdateSiteMedia = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -64,7 +64,7 @@ export const adminUpdateSiteMedia = createServerFn({ method: "POST" })
   });
 
 // ---------- File uploads (video / images) ----------
-export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
+export const adminCreateSignedMediaUpload = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
@@ -95,7 +95,7 @@ export const adminCreateSignedMediaUpload = createServerFn({ method: "POST" })
     }
   });
 
-export const adminFinalizeMediaUpload = createServerFn({ method: "POST" })
+export const adminFinalizeMediaUpload = createFn({ method: "POST" })
   .validator((input) => z.object({ path: z.string().trim().min(1).max(1000) }).parse(input))
   .handler(async ({ data }) => {
     return { url: data.path };

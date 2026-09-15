@@ -1,7 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
 import { apiClient } from "@/lib/api-client";
+import { createFn } from "@/lib/create-fn";
 
-export const listNotifications = createServerFn({ method: "GET" }).handler(async () => {
+export const listNotifications = createFn({ method: "GET" }).handler(async () => {
   const data = await apiClient.get<any[]>("/api/notifications");
   return (data ?? []).map((r) => ({
     id: (r.id || r._id) as string,
@@ -13,7 +13,7 @@ export const listNotifications = createServerFn({ method: "GET" }).handler(async
   }));
 });
 
-export const markAllRead = createServerFn({ method: "POST" }).handler(async () => {
+export const markAllRead = createFn({ method: "POST" }).handler(async () => {
   await apiClient.post("/api/notifications/read-all");
   return { ok: true };
 });
