@@ -6,21 +6,18 @@ import { resetPasswordWithOTP } from "@/lib/auth.functions";
 import { AuthShell, Field, PasswordInput } from "./signup";
 
 export const Route = createFileRoute("/reset-password")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    token: typeof search.token === "string" ? search.token : "",
-    code: typeof search.code === "string" ? search.code : "",
-    email: typeof search.email === "string" ? search.email : "",
+  validateSearch: (search: Record<string, unknown>): { email?: string; otp?: string; code?: string; token?: string } => ({
+    email: typeof search.email === "string" ? search.email : undefined,
+    otp: typeof search.otp === "string" ? search.otp : typeof search.code === "string" ? search.code : typeof search.token === "string" ? search.token : undefined,
   }),
   component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
-  const search = Route.useSearch();
+  const { email = "", otp = "" } = Route.useSearch();
   const resetFn = useServerFn(resetPasswordWithOTP);
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState(search.email || "");
-  const [otp, setOtp] = useState(search.code || search.token || "");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -28,20 +25,26 @@ function ResetPasswordPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanOtp = otp.trim();
-
-    if (!cleanEmail) return toast.error("Please enter your email address");
-    if (!cleanOtp || cleanOtp.length < 4) return toast.error("Please enter the 6-digit verification code");
-    if (password.length < 8) return toast.error("Password must be at least 8 characters");
-    if (password !== confirm) return toast.error("Passwords do not match");
+    if (!email || !otp) {
+      toast.error("Missing verification code. Please request a new code.");
+      navigate({ to: "/forgot-password" });
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("Passwords do not match");
+      return;
+    }
 
     setLoading(true);
     try {
       await resetFn({
         data: {
-          email: cleanEmail,
-          otp: cleanOtp,
+          email: email.trim().toLowerCase(),
+          otp: otp.trim(),
           new_password: password,
         },
       });
@@ -54,38 +57,27 @@ function ResetPasswordPage() {
     }
   }
 
+  if (!email || !otp) {
+    return (
+      <AuthShell title="Reset password" subtitle="Verification required">
+        <p className="text-center text-sm text-muted-foreground">
+          To reset your password, please start by requesting a verification code.
+        </p>
+        <div className="mt-6 text-center">
+          <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+            Request verification code
+          </Link>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell
-      title="Set a new password"
-      subtitle="Enter the 6-digit code sent to your email to set a new password."
+      title="Create new password"
+      subtitle="Enter and confirm your new password below."
     >
       <form onSubmit={onSubmit} className="space-y-4">
-        {!search.email && (
-          <Field label="Email address">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="you@example.com"
-            />
-          </Field>
-        )}
-
-        <Field label="6-digit verification code">
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            required
-            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-center font-mono text-xl font-bold tracking-[0.4em] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            placeholder="••••••"
-          />
-        </Field>
-
         <Field label="New password">
           <PasswordInput
             value={password}
@@ -109,18 +101,16 @@ function ResetPasswordPage() {
           disabled={loading}
           className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Saving…" : "Save new password"}
+          {loading ? "Saving new password…" : "Save new password"}
         </button>
       </form>
 
-      <div className="mt-6 flex flex-col items-center gap-2 text-sm text-muted-foreground">
-        <Link to="/forgot-password" className="font-medium text-primary hover:underline">
-          Didn't get a code? Request one here
-        </Link>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Remembered your password?{" "}
         <Link to="/login" className="font-medium text-primary hover:underline">
           Back to log in
         </Link>
-      </div>
+      </p>
     </AuthShell>
   );
 }

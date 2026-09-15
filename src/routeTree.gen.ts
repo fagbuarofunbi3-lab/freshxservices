@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletVerifyRouteImport } from './routes/wallet-verify'
+import { Route as VerifyOtpRouteImport } from './routes/verify-otp'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPinRouteImport } from './routes/reset-pin'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -43,6 +44,11 @@ import { Route as AuthenticatedOrderConfirmedIdRouteImport } from './routes/_aut
 const WalletVerifyRoute = WalletVerifyRouteImport.update({
   id: '/wallet-verify',
   path: '/wallet-verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyOtpRoute = VerifyOtpRouteImport.update({
+  id: '/verify-otp',
+  path: '/verify-otp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/reset-pin': typeof ResetPinRoute
   '/signup': typeof SignupRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ambassador': typeof AuthenticatedAmbassadorRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/reset-pin': typeof ResetPinRoute
   '/signup': typeof SignupRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/ambassador': typeof AuthenticatedAmbassadorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/reset-pin': typeof ResetPinRoute
   '/signup': typeof SignupRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/wallet-verify': typeof WalletVerifyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ambassador': typeof AuthenticatedAmbassadorRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/reset-pin'
     | '/signup'
+    | '/verify-otp'
     | '/wallet-verify'
     | '/admin'
     | '/ambassador'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/reset-pin'
     | '/signup'
+    | '/verify-otp'
     | '/wallet-verify'
     | '/ambassador'
     | '/dashboard'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/reset-pin'
     | '/signup'
+    | '/verify-otp'
     | '/wallet-verify'
     | '/_authenticated/admin'
     | '/_authenticated/ambassador'
@@ -399,6 +411,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ResetPinRoute: typeof ResetPinRoute
   SignupRoute: typeof SignupRoute
+  VerifyOtpRoute: typeof VerifyOtpRoute
   WalletVerifyRoute: typeof WalletVerifyRoute
   RCodeRoute: typeof RCodeRoute
 }
@@ -410,6 +423,13 @@ declare module '@tanstack/react-router' {
       path: '/wallet-verify'
       fullPath: '/wallet-verify'
       preLoaderRoute: typeof WalletVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-otp': {
+      id: '/verify-otp'
+      path: '/verify-otp'
+      fullPath: '/verify-otp'
+      preLoaderRoute: typeof VerifyOtpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -696,6 +716,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ResetPinRoute: ResetPinRoute,
   SignupRoute: SignupRoute,
+  VerifyOtpRoute: VerifyOtpRoute,
   WalletVerifyRoute: WalletVerifyRoute,
   RCodeRoute: RCodeRoute,
 }

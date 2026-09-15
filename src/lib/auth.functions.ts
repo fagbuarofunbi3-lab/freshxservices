@@ -210,6 +210,29 @@ export const resetPasswordWithVerifiedEmail = createFn({ method: "POST" })
     return { ok: true };
   });
 
+export const verifyEmailOTP = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        email: EmailSchema,
+        code: z.string().min(4).max(10),
+        purpose: z.string().optional().default("reset_password"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const res = await apiClient.post<{ ok: boolean; valid: boolean }>(
+      "/api/auth/verify-otp",
+      {
+        email: data.email,
+        code: data.code.trim(),
+        purpose: data.purpose || "reset_password",
+      },
+      { skipAuth: true },
+    );
+    return res;
+  });
+
 export const resetPasswordWithOTP = createFn({ method: "POST" })
   .validator((input) =>
     z
