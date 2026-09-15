@@ -66,9 +66,12 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+import { setServerEnv } from "./lib/api-client";
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      setServerEnv(env);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

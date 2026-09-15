@@ -1,9 +1,22 @@
 // Central API client connecting FreshX to the Go serverless MongoDB backend.
 import { getFreshXSession } from "@/lib/session.server";
 
-const getBackendUrl = () => {
-  const url = process.env.BACKEND_URL || process.env.VITE_BACKEND_URL || "http://localhost:8080";
-  return url.replace(/\/+$/, "");
+let globalServerEnv: any = null;
+
+export function setServerEnv(env: any) {
+  if (env && typeof env === "object") {
+    globalServerEnv = env;
+  }
+}
+
+export const getBackendUrl = () => {
+  const url =
+    globalServerEnv?.BACKEND_URL ||
+    globalServerEnv?.VITE_BACKEND_URL ||
+    (typeof process !== "undefined" && (process.env?.BACKEND_URL || process.env?.VITE_BACKEND_URL)) ||
+    (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_BACKEND_URL) ||
+    "https://freshxbackend.vercel.app";
+  return String(url).replace(/\/+$/, "");
 };
 
 export class ApiError extends Error {
@@ -50,7 +63,7 @@ export async function apiRequest<T = any>(
 
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
-      headers.set("Cookie", `token=${token}`);
+      headers.set("Cookie", `freshx_token=${token}; token=${token}`);
     }
   }
 

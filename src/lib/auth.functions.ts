@@ -100,10 +100,15 @@ export const logOut = createServerFn({ method: "POST" }).handler(async () => {
 export const getMe = createServerFn({ method: "GET" }).handler(async () => {
   const session = await getFreshXSession();
   const token = session.data?.token;
-  if (!token && !session.data?.profileId) return null;
+  if (!token) {
+    if (session.data?.profileId) {
+      await session.clear();
+    }
+    return null;
+  }
 
   try {
-    const user = await apiClient.get<any>("/api/auth/me");
+    const user = await apiClient.get<any>("/api/auth/me", { token });
     return {
       id: user.id as string,
       full_name: user.full_name as string,
