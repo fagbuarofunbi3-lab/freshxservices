@@ -6,10 +6,6 @@ import { logIn } from "@/lib/auth.functions";
 import { useInvalidateMe } from "./__root";
 import { AuthShell, Field, PasswordInput } from "./signup";
 
-const LOGIN_TITLE = "Log in to FreshX Services";
-const LOGIN_DESC =
-  "Sign in to your FreshX account to book laundry, cleaning and home services in Port Harcourt, track orders and manage your wallet.";
-
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
@@ -23,7 +19,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const invalidate = useInvalidateMe();
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +28,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await fn({ data: { whatsapp_number: phone, password } });
+      const result = await fn({ data: { email, password } });
       await waitForSessionReady();
       await invalidate();
       await router.invalidate();
@@ -46,21 +42,19 @@ function LoginPage() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in with your WhatsApp number and password.">
+    <AuthShell title="Welcome back" subtitle="Sign in with your email and password.">
       <form onSubmit={onSubmit} className="space-y-4">
-        <Field label="WhatsApp number">
-          <div className="flex items-stretch overflow-hidden rounded-md border border-input">
-            <span className="flex items-center bg-muted px-3 text-sm text-muted-foreground">+234</span>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              inputMode="numeric"
-              maxLength={14}
-              className="w-full bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="801 234 5678"
-            />
-          </div>
+        <Field label="Email address">
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            type="email"
+            maxLength={200}
+            autoComplete="email"
+            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="you@example.com"
+          />
         </Field>
         <Field label="Password">
           <PasswordInput value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw((s) => !s)} />

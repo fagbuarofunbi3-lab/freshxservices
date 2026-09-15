@@ -5,10 +5,6 @@ import { toast } from "sonner";
 import { requestPasswordResetEmail } from "@/lib/auth.functions";
 import { AuthShell, Field } from "./signup";
 
-const FP_TITLE = "Reset your FreshX password";
-const FP_DESC =
-  "Forgot your FreshX password? Enter your email and we'll send you a secure link to set a new one.";
-
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
 });
@@ -16,7 +12,6 @@ export const Route = createFileRoute("/forgot-password")({
 function ForgotPasswordPage() {
   const fn = useServerFn(requestPasswordResetEmail);
   const navigate = useNavigate();
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -25,7 +20,7 @@ function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fn({ data: { whatsapp_number: phone, email } });
+      const res = await fn({ data: { email } });
       setSentTo(res.masked_email);
       toast.success("Password reset link sent. Check your email.");
     } catch (err) {
@@ -35,33 +30,42 @@ function ForgotPasswordPage() {
     }
   }
 
+  if (sentTo) {
+    return (
+      <AuthShell title="Check your inbox" subtitle={`We sent a reset link to ${sentTo}`}>
+        <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+          Check your inbox (and spam folder) for the reset link.
+        </div>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <button
+            onClick={() => { setSentTo(null); setEmail(""); }}
+            className="font-medium text-primary hover:underline"
+          >
+            Try a different email
+          </button>
+          {" · "}
+          <Link to="/login" className="font-medium text-primary hover:underline">
+            Back to log in
+          </Link>
+        </p>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell
       title="Reset your password"
-      subtitle="Confirm your WhatsApp number and the email on your account. We'll send a secure reset link."
+      subtitle="Enter the email on your account and we'll send a reset link."
     >
       <form onSubmit={onSubmit} className="space-y-4">
-        <Field label="WhatsApp number">
-          <div className="flex items-stretch overflow-hidden rounded-md border border-input">
-            <span className="flex items-center bg-muted px-3 text-sm text-muted-foreground">+234</span>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              inputMode="numeric"
-              maxLength={14}
-              className="w-full bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="801 234 5678"
-            />
-          </div>
-        </Field>
-        <Field label="Email on the account">
+        <Field label="Email address">
           <input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
             type="email"
             maxLength={200}
+            autoComplete="email"
             className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="you@example.com"
           />
@@ -74,11 +78,6 @@ function ForgotPasswordPage() {
           {loading ? "Sending…" : "Email me a reset link"}
         </button>
       </form>
-      {sentTo && (
-        <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-          Reset link sent to <span className="font-medium text-foreground">{sentTo}</span>. Check your inbox and spam folder.
-        </div>
-      )}
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Remembered it?{" "}
         <Link to="/login" className="font-medium text-primary hover:underline">

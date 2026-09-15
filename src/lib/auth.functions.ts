@@ -58,14 +58,14 @@ export const logIn = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
-        whatsapp_number: PhoneSchema,
+        email: EmailSchema,
         password: PasswordSchema,
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const res = await apiClient.post<{ ok: boolean; user: any; token: string; role?: string }>("/api/auth/login", {
-      whatsapp_number: data.whatsapp_number,
+      email: data.email,
       password: data.password,
     }, { skipAuth: true });
 
@@ -177,7 +177,6 @@ export const requestPasswordResetEmail = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
-        whatsapp_number: PhoneSchema,
         email: EmailSchema,
       })
       .parse(input),

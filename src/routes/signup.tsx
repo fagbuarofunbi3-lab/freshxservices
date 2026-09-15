@@ -70,7 +70,7 @@ function SignUpPage() {
 
 
   return (
-    <AuthShell title="Create your FreshX account" subtitle="Name, WhatsApp number, email and a password.">
+    <AuthShell title="Create your FreshX account" subtitle="Enter your details below to get started.">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Full name">
           <input
@@ -81,6 +81,18 @@ function SignUpPage() {
             maxLength={80}
             className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="Emeka Johnson"
+          />
+        </Field>
+        <Field label="Email address">
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            type="email"
+            maxLength={200}
+            autoComplete="email"
+            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="you@example.com"
           />
         </Field>
         <Field label="WhatsApp number">
@@ -96,18 +108,6 @@ function SignUpPage() {
               placeholder="801 234 5678"
             />
           </div>
-        </Field>
-        <Field label="Email (for password recovery)">
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            type="email"
-            maxLength={200}
-            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
         </Field>
         <Field label="Password">
           <PasswordInput value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw((s) => !s)} />
