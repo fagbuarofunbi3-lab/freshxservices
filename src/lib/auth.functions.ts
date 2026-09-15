@@ -210,10 +210,30 @@ export const resetPasswordWithVerifiedEmail = createFn({ method: "POST" })
     return { ok: true };
   });
 
+export const resetPasswordWithOTP = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        email: EmailSchema,
+        otp: z.string().min(4).max(10),
+        new_password: PasswordSchema,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await apiClient.post("/api/auth/reset-password", {
+      email: data.email,
+      otp: data.otp.trim(),
+      new_password: data.new_password,
+    }, { skipAuth: true });
+    return { ok: true };
+  });
+
 export const resetPasswordWithToken = createFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
+        email: EmailSchema.optional(),
         token: z.string().min(1).max(1000),
         new_password: PasswordSchema,
       })
@@ -221,6 +241,7 @@ export const resetPasswordWithToken = createFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await apiClient.post("/api/auth/reset-password", {
+      email: data.email,
       otp: data.token,
       new_password: data.new_password,
     }, { skipAuth: true });

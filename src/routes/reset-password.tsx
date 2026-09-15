@@ -1,48 +1,51 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@/lib/create-fn";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { resetPasswordWithToken, resetPasswordWithVerifiedEmail } from "@/lib/auth.functions";
+import { resetPasswordWithOTP } from "@/lib/auth.functions";
 import { AuthShell, Field, PasswordInput } from "./signup";
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (search: Record<string, unknown>) => ({
     token: typeof search.token === "string" ? search.token : "",
-    source: typeof search.source === "string" ? search.source : "",
+    code: typeof search.code === "string" ? search.code : "",
+    email: typeof search.email === "string" ? search.email : "",
   }),
   component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
-  const { token, source } = Route.useSearch();
-  const isBuiltInEmailLink = source === "auth";
-  const tokenFn = useServerFn(resetPasswordWithToken);
-  const verifiedEmailFn = useServerFn(resetPasswordWithVerifiedEmail);
+  const search = Route.useSearch();
+  const resetFn = useServerFn(resetPasswordWithOTP);
   const navigate = useNavigate();
+
+  const [email, setEmail] = useState(search.email || "");
+  const [otp, setOtp] = useState(search.code || search.token || "");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checkingLink, setCheckingLink] = useState(false);
-
-  useEffect(() => {
-    if (isBuiltInEmailLink) {
-      setCheckingLink(false);
-    }
-  }, [isBuiltInEmailLink]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!token && !isBuiltInEmailLink) return toast.error("Missing reset token. Open the link from your email again.");
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+
+    if (!cleanEmail) return toast.error("Please enter your email address");
+    if (!cleanOtp || cleanOtp.length < 4) return toast.error("Please enter the 6-digit verification code");
+    if (password.length < 8) return toast.error("Password must be at least 8 characters");
     if (password !== confirm) return toast.error("Passwords do not match");
+
     setLoading(true);
     try {
-      if (isBuiltInEmailLink) {
-        await verifiedEmailFn({ data: { new_password: password } });
-      } else {
-        await tokenFn({ data: { token, new_password: password } });
-      }
-      toast.success("Password reset. You can now log in.");
+      await resetFn({
+        data: {
+          email: cleanEmail,
+          otp: cleanOtp,
+          new_password: password,
+        },
+      });
+      toast.success("Password reset successfully! You can now log in.");
       await navigate({ to: "/login", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not reset password");
@@ -51,43 +54,73 @@ function ResetPasswordPage() {
     }
   }
 
-  if (!token && !isBuiltInEmailLink) {
-    return (
-      <AuthShell title="Reset password" subtitle="This link is missing its reset token.">
-        <p className="text-sm text-muted-foreground">
-          Open the reset link directly from your email. If it keeps failing, request a new one.
-        </p>
-        <div className="mt-6">
-          <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-            Request a new link
-          </Link>
-        </div>
-      </AuthShell>
-    );
-  }
-
   return (
-    <AuthShell title="Set a new password" subtitle="Choose a new password for your FreshX account.">
+    <AuthShell
+      title="Set a new password"
+      subtitle="Enter the 6-digit code sent to your email to set a new password."
+    >
       <form onSubmit={onSubmit} className="space-y-4">
+        {!search.email && (
+          <Field label="Email address">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              placeholder="you@example.com"
+            />
+          </Field>
+        )}
+
+        <Field label="6-digit verification code">
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            required
+            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-center font-mono text-xl font-bold tracking-[0.4em] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            placeholder="••••••"
+          />
+        </Field>
+
         <Field label="New password">
-          <PasswordInput value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw((s) => !s)} />
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            show={showPw}
+            onToggle={() => setShowPw((s) => !s)}
+          />
         </Field>
+
         <Field label="Confirm new password">
-          <PasswordInput value={confirm} onChange={setConfirm} show={showPw} onToggle={() => setShowPw((s) => !s)} />
+          <PasswordInput
+            value={confirm}
+            onChange={setConfirm}
+            show={showPw}
+            onToggle={() => setShowPw((s) => !s)}
+          />
         </Field>
+
         <button
           type="submit"
-          disabled={loading || checkingLink}
+          disabled={loading}
           className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
-          {checkingLink ? "Verifying link…" : loading ? "Saving…" : "Save new password"}
+          {loading ? "Saving…" : "Save new password"}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+
+      <div className="mt-6 flex flex-col items-center gap-2 text-sm text-muted-foreground">
+        <Link to="/forgot-password" className="font-medium text-primary hover:underline">
+          Didn't get a code? Request one here
+        </Link>
         <Link to="/login" className="font-medium text-primary hover:underline">
           Back to log in
         </Link>
-      </p>
+      </div>
     </AuthShell>
   );
 }
