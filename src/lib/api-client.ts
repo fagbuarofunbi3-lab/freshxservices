@@ -67,7 +67,6 @@ export async function apiRequest<T = any>(
   const res = await fetch(url, {
     ...options,
     headers,
-    credentials: "include",
   });
 
   if (res.status === 204) {

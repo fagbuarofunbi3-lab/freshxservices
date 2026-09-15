@@ -64,13 +64,14 @@ export const logIn = createFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const res = await apiClient.post<{ user: any; token: string }>("/api/auth/login", {
+    const res = await apiClient.post<{ ok: boolean; user: any; token: string; role?: string }>("/api/auth/login", {
       whatsapp_number: data.whatsapp_number,
       password: data.password,
     }, { skipAuth: true });
 
     saveAuthSession(res.user, res.token);
-    return { ok: true, role: res.user.role as "customer" | "admin" };
+    const role = (res.role ?? res.user?.role ?? "customer") as "customer" | "admin";
+    return { ok: true, role };
   });
 
 export const logOut = createFn({ method: "POST" }).handler(async () => {

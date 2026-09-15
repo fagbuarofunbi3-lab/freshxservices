@@ -11,18 +11,6 @@ const FP_DESC =
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
-  head: () => ({
-    meta: [
-      { title: FP_TITLE },
-      { name: "description", content: FP_DESC },
-      { property: "og:title", content: FP_TITLE },
-      { property: "og:description", content: FP_DESC },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://freshxservices.com.ng/forgot-password" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "canonical", href: "https://freshxservices.com.ng/forgot-password" }],
-  }),
 });
 
 function ForgotPasswordPage() {

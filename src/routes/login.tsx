@@ -12,18 +12,6 @@ const LOGIN_DESC =
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
-  head: () => ({
-    meta: [
-      { title: LOGIN_TITLE },
-      { name: "description", content: LOGIN_DESC },
-      { property: "og:title", content: LOGIN_TITLE },
-      { property: "og:description", content: LOGIN_DESC },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://freshxservices.com.ng/login" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "canonical", href: "https://freshxservices.com.ng/login" }],
-  }),
 });
 
 function waitForSessionReady() {

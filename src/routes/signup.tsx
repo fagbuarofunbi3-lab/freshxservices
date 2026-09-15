@@ -11,22 +11,10 @@ const SIGNUP_DESC =
   "Sign up for FreshX in under a minute to book laundry pickup, dry cleaning, home cleaning, gas refill and more across Port Harcourt, Nigeria.";
 
 export const Route = createFileRoute("/signup")({
-validateSearch: (search: Record<string, unknown>): { ref?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { ref?: string } => ({
     ref: typeof search.ref === "string" ? search.ref : undefined,
   }),
   component: SignUpPage,
-  head: () => ({
-    meta: [
-      { title: SIGNUP_TITLE },
-      { name: "description", content: SIGNUP_DESC },
-      { property: "og:title", content: SIGNUP_TITLE },
-      { property: "og:description", content: SIGNUP_DESC },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://freshxservices.com.ng/signup" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "canonical", href: "https://freshxservices.com.ng/signup" }],
-  }),
 });
 
 function waitForSessionReady() {
