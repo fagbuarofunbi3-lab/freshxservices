@@ -129,30 +129,12 @@ function VerifyOtpPage() {
             }}
           >
             <InputOTPGroup className="gap-2 sm:gap-3">
-              <InputOTPSlot
-                index={0}
-                className="h-12 w-11 sm:h-14 sm:w-12 text-xl font-bold rounded-lg border border-input bg-background shadow-xs transition focus:border-primary"
-              />
-              <InputOTPSlot
-                index={1}
-                className="h-12 w-11 sm:h-14 sm:w-12 text-xl font-bold rounded-lg border border-input bg-background shadow-xs transition focus:border-primary"
-              />
-              <InputOTPSlot
-                index={2}
-                className="h-12 w-11 sm:h-14 sm:w-12 text-xl font-bold rounded-lg border border-input bg-background shadow-xs transition focus:border-primary"
-              />
-              <InputOTPSlot
-                index={3}
-                className="h-12 w-11 sm:h-14 sm:w-12 text-xl font-bold rounded-lg border border-input bg-background shadow-xs transition focus:border-primary"
-              />
-              <InputOTPSlot
-                index={4}
-                className="h-12 w-11 sm:h-14 sm:w-12 text-xl font-bold rounded-lg border border-input bg-background shadow-xs transition focus:border-primary"
-              />
-              <InputOTPSlot
-                index={5}
-                className="h-12 w-11 sm:h-14 sm:w-12 text-xl font-bold rounded-lg border border-input bg-background shadow-xs transition focus:border-primary"
-              />
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
             </InputOTPGroup>
           </InputOTP>
           <p className="mt-3 text-xs text-muted-foreground">

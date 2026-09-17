@@ -390,4 +390,78 @@ export const googleAuth = createFn({ method: "POST" })
     return res;
   });
 
+export const sendSecurityOTP = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        email: EmailSchema.optional(),
+        purpose: z.enum([
+          "change_password",
+          "create_pin",
+          "delete_pin",
+          "reset_password",
+          "signup",
+        ]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await apiClient.post("/api/auth/send-otp", {
+      email: data.email,
+      purpose: data.purpose,
+    });
+    return { ok: true };
+  });
+
+export const changePasswordWithOTP = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        new_password: PasswordSchema,
+        otp: z.string().min(4).max(10),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await apiClient.post("/api/auth/change-password", {
+      new_password: data.new_password,
+      otp: data.otp.trim(),
+    });
+    return { ok: true };
+  });
+
+export const setTransactionPinWithOTP = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        new_pin: PinSchema,
+        otp: z.string().min(4).max(10),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await apiClient.post("/api/auth/pin", {
+      new_pin: data.new_pin,
+      pin: data.new_pin,
+      otp: data.otp.trim(),
+    });
+    return { ok: true };
+  });
+
+export const deleteTransactionPinWithOTP = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        otp: z.string().min(4).max(10),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await apiClient.post("/api/auth/pin/delete", {
+      otp: data.otp.trim(),
+    });
+    return { ok: true };
+  });
+
+
 

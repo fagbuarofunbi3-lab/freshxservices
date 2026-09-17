@@ -4,10 +4,11 @@ import { useServerFn } from "@/lib/create-fn";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Shirt, SprayCan, Bug, Minus, Plus, MessageCircle, Info } from "lucide-react";
+import { Shirt, SprayCan, Bug, Minus, Plus, MessageCircle, Info, KeyRound, ShieldAlert } from "lucide-react";
 import { applyPromo, createOrder, listServiceItems, notifyCleaningRequest } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const WHATSAPP_ADMIN_NUMBER = "2349114292652";
 
@@ -209,7 +210,12 @@ function NewOrderPage() {
 
     // LAUNDRY → wallet + PIN
     if (!me?.has_transaction_pin) {
-      return toast.error("Set up your 4-digit transaction PIN in Settings before paying.");
+      return toast.error("Set up your 4-digit transaction PIN in Settings before paying.", {
+        action: {
+          label: "Create PIN",
+          onClick: () => navigate({ to: "/settings", search: { tab: "pin", action: "create" } }),
+        },
+      });
     }
     if (!/^\d{4}$/.test(pin)) {
       return toast.error("Enter your 4-digit transaction PIN to confirm");
@@ -587,25 +593,57 @@ function NewOrderPage() {
                 Wallet balance: <span className="font-medium text-foreground">{naira(me?.wallet_balance ?? 0)}</span>
               </div>
               {me?.has_transaction_pin ? (
-                <label className="mt-4 block">
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground">Transaction PIN</span>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="••••"
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-center text-sm tracking-[0.5em]"
-                  />
-                </label>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Transaction PIN
+                    </span>
+                    <Link
+                      to="/settings"
+                      search={{ tab: "pin", action: "create" }}
+                      className="text-[11px] font-medium text-primary hover:underline"
+                    >
+                      Change PIN
+                    </Link>
+                  </div>
+                  <div className="flex justify-start">
+                    <InputOTP
+                      maxLength={4}
+                      value={pin}
+                      onChange={(val) => setPin(val.replace(/\D/g, "").slice(0, 4))}
+                    >
+                      <InputOTPGroup className="gap-2 sm:gap-2.5">
+                        {[0, 1, 2, 3].map((idx) => (
+                          <InputOTPSlot key={idx} index={idx} mask className="h-11 w-10 text-lg rounded-lg" />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                </div>
               ) : (
-                <div className="mt-4 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs">
-                  You don't have a transaction PIN yet.{" "}
-                  <Link to="/settings" className="font-medium text-primary hover:underline">
-                    Create one in Settings
-                  </Link>{" "}
-                  to pay for laundry orders.
+                <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-950 dark:text-amber-200">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-amber-500/20 p-2 text-amber-600 dark:text-amber-400">
+                      <KeyRound className="h-4 w-4" />
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <div>
+                        <div className="font-semibold text-sm">
+                          Set up your Transaction PIN
+                        </div>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          You need a 4-digit transaction PIN to pay for laundry orders from your wallet balance.
+                        </p>
+                      </div>
+                      <Link
+                        to="/settings"
+                        search={{ tab: "pin", action: "create" }}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition hover:opacity-90"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" /> Create Transaction PIN →
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               )}
               <button
