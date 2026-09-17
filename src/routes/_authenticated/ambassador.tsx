@@ -2,8 +2,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/create-fn";
 import { motion } from "framer-motion";
-import { GraduationCap, Ticket, Shirt, Sparkles, Users, MessageCircle, CheckCircle2 } from "lucide-react";
-import { getMe } from "@/lib/auth.functions";
+import { GraduationCap, Ticket, Shirt, Compass, Users, MessageCircle, CheckCircle2 } from "lucide-react";
+import { getMe, isAdminRole } from "@/lib/auth.functions";
 import { getContactWhatsapp } from "@/lib/site-settings.functions";
 import { useMe } from "../__root";
 
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/ambassador")({
   beforeLoad: async () => {
     const me = await getMe();
     if (!me) throw redirect({ to: "/login" });
-    if (me.role === "admin") throw redirect({ to: "/admin" });
+    if (isAdminRole(me.role)) throw redirect({ to: "/admin" });
   },
   component: AmbassadorPage,
 });
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/ambassador")({
 const BENEFITS = [
   { icon: Ticket, t: "Special promo code", d: "Get your own unique promo code and earn endlessly." },
   { icon: Shirt, t: "Branded merch", d: "Free FreshX T-shirt and cap to rep the brand." },
-  { icon: Sparkles, t: "Free orientation", d: "Get fully onboarded on what FreshX is all about." },
+  { icon: Compass, t: "Free orientation", d: "Get fully onboarded on what FreshX is all about." },
   { icon: Users, t: "Innovative community", d: "Be part of a fast-growing community of innovators." },
 ] as const;
 

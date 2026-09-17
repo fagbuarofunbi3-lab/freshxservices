@@ -22,7 +22,12 @@ export function OrderSummary({ order, showTracker = true }: { order: NonNullable
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
-              {order.service_type === "laundry" ? "Laundry" : "Cleaning"} order
+              {order.service_type === "pest_control"
+                ? "Pest Control"
+                : order.service_type === "cleaning"
+                  ? "Cleaning"
+                  : "Laundry"}{" "}
+              order
             </div>
             <h1 className="font-display text-2xl">FX-{order.id.slice(0, 8).toUpperCase()}</h1>
             <div className="mt-1 text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, ShieldCheck, Truck, WashingMachine } from "lucide-react";
+import { Gift, ShieldCheck, Truck, WashingMachine } from "lucide-react";
 
 export const Route = createFileRoute("/r/$code")({
   head: ({ params }) => {
@@ -40,7 +40,7 @@ function ReferralLanding() {
 
         <main className="mt-8 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-[11px] font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Gift className="h-3.5 w-3.5" />
             You've been invited
           </div>
 

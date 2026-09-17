@@ -3,7 +3,7 @@ import { useServerFn } from "@/lib/create-fn";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { requestPasswordResetEmail, verifyEmailOTP } from "@/lib/auth.functions";
-import { AuthShell } from "./signup";
+import { AuthShell } from "@/components/AuthShell";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 export const Route = createFileRoute("/verify-otp")({

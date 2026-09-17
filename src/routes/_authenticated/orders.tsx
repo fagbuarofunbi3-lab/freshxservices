@@ -34,8 +34,12 @@ function OrdersPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">
-                      {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
-                      {o.id.slice(0, 8).toUpperCase()}
+                      {o.service_type === "pest_control"
+                        ? "Pest Control"
+                        : o.service_type === "cleaning"
+                          ? "Cleaning"
+                          : "Laundry"}{" "}
+                      · FX-{o.id.slice(0, 8).toUpperCase()}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {new Date(o.created_at).toLocaleString()}

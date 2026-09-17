@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Trophy, Medal, Sparkles, ArrowLeft, Copy, Share2, Check, Wand2 } from "lucide-react";
+import { Trophy, Medal, Flame, ArrowLeft, Copy, Share2, Check, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { getReferralLeaderboard, generateMyReferralCode } from "@/lib/referrals.functions";
 
@@ -44,7 +44,7 @@ function LeaderboardPage() {
         />
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-[11px] font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> Referral Challenge
+            <Flame className="h-3.5 w-3.5" /> Referral Challenge
           </div>
           <h1 className="mt-3 font-display text-3xl md:text-4xl">Top Ambassadors</h1>
           <p className="mt-1 text-sm text-muted-foreground">

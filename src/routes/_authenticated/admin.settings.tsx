@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/create-fn";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ImageIcon, Phone, Video, Upload, X, ShieldCheck } from "lucide-react";
+import { ImageIcon, Phone, Video, Upload, X, ShieldCheck, ShieldAlert } from "lucide-react";
 import { adminSearchUsers, adminSetUserRole } from "@/lib/admin.functions";
+import { UserRole, getRoleBadge } from "@/lib/auth.functions";
 import {
   getContactWhatsapp,
   adminUpdateContactWhatsapp,
@@ -329,6 +330,14 @@ function AdminSettingsPage() {
   );
 }
 
+const ADMIN_ROLES: { value: UserRole; label: string; desc: string }[] = [
+  { value: "admin", label: "Super Admin", desc: "Full master access: settings, system config, role assignments" },
+  { value: "operations", label: "Operations Admin", desc: "Manages orders fulfillment, catalog services, vetted professionals" },
+  { value: "finance", label: "Finance Admin", desc: "Manages customer wallet adjustments, promo codes, referral payouts, revenue" },
+  { value: "support", label: "Support Admin", desc: "Customer care: view orders, read-only customer details, notifications" },
+  { value: "customer", label: "Customer", desc: "Standard customer account with no administrative access" },
+];
+
 function AdminAccessSection() {
   const search = useServerFn(adminSearchUsers);
   const setRole = useServerFn(adminSetUserRole);
@@ -341,12 +350,11 @@ function AdminAccessSection() {
     enabled: q.trim().length >= 2,
   });
 
-  async function toggleRole(profile_id: string, currentRole: string) {
-    const next = currentRole === "admin" ? "user" : "admin";
-    setBusyId(profile_id);
+  async function handleRoleChange(userId: string, newRole: UserRole) {
+    setBusyId(userId);
     try {
-      await setRole({ data: { profile_id, role: next } });
-      toast.success(next === "admin" ? "User promoted to admin" : "Admin access removed");
+      await setRole({ data: { user_id: userId, profile_id: userId, role: newRole } });
+      toast.success(`Role updated to ${getRoleBadge(newRole).label}`);
       await refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not update role");
@@ -358,17 +366,34 @@ function AdminAccessSection() {
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 text-sm font-semibold">
-        <ShieldCheck className="h-4 w-4 text-primary" /> Admin access
+        <ShieldCheck className="h-4 w-4 text-primary" /> Admin & Staff Access (RBAC)
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Search for any user by name, WhatsApp number, or email, then promote them to admin.
-        Admins get the same admin dashboard access you have.
+        Assign role-based administrative permissions to team members. Each role unlocks specific back-office tabs and capabilities.
       </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {ADMIN_ROLES.filter((r) => r.value !== "customer").map((r) => {
+          const badge = getRoleBadge(r.value);
+          return (
+            <div key={r.value} className="rounded-xl border border-border bg-background p-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">{r.label}</span>
+                <span className={`rounded-full border px-1.5 py-0.5 text-[10px] ${badge.color}`}>
+                  {r.value}
+                </span>
+              </div>
+              <p className="mt-1.5 text-muted-foreground text-[11px] leading-relaxed">{r.desc}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name / WhatsApp / email"
+          placeholder="Search name / WhatsApp / email to assign roles…"
           className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
@@ -376,43 +401,42 @@ function AdminAccessSection() {
       {q.trim().length >= 2 && (
         <div className="mt-4 divide-y divide-border rounded-md border border-border">
           {isFetching && !results ? (
-            <div className="p-3 text-sm text-muted-foreground">Searching…</div>
+            <div className="p-3 text-sm text-muted-foreground">Searching users…</div>
           ) : (results?.length ?? 0) === 0 ? (
             <div className="p-3 text-sm text-muted-foreground">No users found.</div>
           ) : (
-            results!.map((u) => (
-              <div key={u.id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{u.full_name || "—"}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {u.whatsapp_number}
-                    {u.email ? ` · ${u.email}` : ""}
+            results!.map((u) => {
+              const currentRole = (u.role as UserRole) || "customer";
+              const badge = getRoleBadge(currentRole);
+              return (
+                <div key={u.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{u.full_name || "—"}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {u.whatsapp_number}
+                      {u.email ? ` · ${u.email}` : ""}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${badge.color}`}>
+                      {badge.label}
+                    </span>
+                    <select
+                      value={currentRole}
+                      disabled={busyId === u.id}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                      className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs font-medium outline-none focus:border-primary disabled:opacity-50"
+                    >
+                      {ADMIN_ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs capitalize ${
-                      u.role === "admin"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {u.role}
-                  </span>
-                  <button
-                    onClick={() => toggleRole(u.id, u.role)}
-                    disabled={busyId === u.id}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
-                  >
-                    {busyId === u.id
-                      ? "Saving…"
-                      : u.role === "admin"
-                        ? "Remove admin"
-                        : "Make admin"}
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

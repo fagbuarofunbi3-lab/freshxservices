@@ -11,11 +11,14 @@ import {
   adminUpsertCustomerReferral,
 } from "@/lib/admin.functions";
 import { naira } from "@/lib/format";
-
+import { useMe } from "../__root";
+import { canManageFinances } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/customers")({ component: AdminCustomers });
 
 function AdminCustomers() {
+  const { data: me } = useMe();
+  const isFinanceAllowed = canManageFinances(me?.role);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const { data } = useQuery({ queryKey: ["admin-customers"], queryFn: () => adminListCustomers() });
@@ -84,27 +87,32 @@ function AdminCustomers() {
                 <td className="px-4 py-3">{naira(c.wallet_balance)}</td>
                 <td className="px-4 py-3 capitalize">{c.role}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  <button
-                    onClick={() => setAdjusting({ id: c.id, name: c.full_name, balance: c.wallet_balance })}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Adjust wallet
-                  </button>
-                  <span className="mx-2 text-muted-foreground">·</span>
-                  <button
-                    onClick={() => setPromoFor({ id: c.id, name: c.full_name })}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Promo code
-                  </button>
-                  <span className="mx-2 text-muted-foreground">·</span>
-                  <button
-                    onClick={() => setReferralFor({ id: c.id, name: c.full_name })}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Referral code
-                  </button>
-
+                  {isFinanceAllowed ? (
+                    <>
+                      <button
+                        onClick={() => setAdjusting({ id: c.id, name: c.full_name, balance: c.wallet_balance })}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Adjust wallet
+                      </button>
+                      <span className="mx-2 text-muted-foreground">·</span>
+                      <button
+                        onClick={() => setPromoFor({ id: c.id, name: c.full_name })}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Promo code
+                      </button>
+                      <span className="mx-2 text-muted-foreground">·</span>
+                      <button
+                        onClick={() => setReferralFor({ id: c.id, name: c.full_name })}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Referral code
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">View only</span>
+                  )}
                 </td>
               </tr>
             ))}

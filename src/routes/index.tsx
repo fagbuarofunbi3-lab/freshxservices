@@ -2,13 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@/lib/create-fn";
 import { motion } from "framer-motion";
-import { Sparkles, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone, Video } from "lucide-react";
+import { Shirt, Bug, Activity, Wallet, MessageCircle, Truck, ShieldCheck, ArrowRight, Phone, Video } from "lucide-react";
 import { getContactWhatsapp, getSiteMedia } from "@/lib/site-settings.functions";
 
 const SITE = "https://freshxservices.com.ng";
-const HOME_TITLE = "FreshX Services — Laundry & Cleaning in Port Harcourt";
+const HOME_TITLE = "FreshX Services — Laundry, Cleaning & Pest Control in Port Harcourt";
 const HOME_DESC =
-  "FreshX is an automated laundry, dry cleaning and home cleaning service in Port Harcourt, Nigeria. Book a pickup online, pay from your wallet, and get fresh clothes delivered back to you.";
+  "FreshX is an automated laundry, dry cleaning, home cleaning and pest control service in Port Harcourt, Nigeria. Book online, pay from your wallet, and keep your clothes, spaces and environment fresh.";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -153,10 +153,10 @@ function Landing() {
       {/* SERVICES */}
       <section id="services" className="py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-display text-3xl md:text-4xl">Two services. One wallet.</h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <h2 className="font-display text-3xl md:text-4xl">Three services. One wallet.</h2>
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
             <ServiceCard
-              icon={<Sparkles className="h-6 w-6 text-primary" />}
+              icon={<Shirt className="h-6 w-6 text-primary" />}
               title="Laundry"
               copy="Wash & fold your soft clothes, hard clothes, and bedding."
               price="from ₦150/item"
@@ -169,6 +169,13 @@ function Landing() {
               price="from ₦3,500/session"
               cta="Book Now"
             />
+            <ServiceCard
+              icon={<Bug className="h-6 w-6 text-primary" />}
+              title="Pest Control"
+              copy="Professional fumigation & eradication for bedbugs, rodents & pests."
+              price="from ₦12,000/session"
+              cta="Book Now"
+            />
           </div>
         </div>
       </section>
@@ -179,7 +186,7 @@ function Landing() {
           <h2 className="font-display text-3xl md:text-4xl">Why FreshX</h2>
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Sparkles, t: "Real-time tracking", d: "Watch every order from received to delivered." },
+              { icon: Activity, t: "Real-time tracking", d: "Watch every order from received to delivered." },
               { icon: Wallet, t: "Pre-paid wallet", d: "No cash, no card-swiping at every order." },
               { icon: MessageCircle, t: "WhatsApp updates", d: "We message you at every step." },
               { icon: Truck, t: "Pickup or drop-off", d: "Bring it yourself or we come to you." },

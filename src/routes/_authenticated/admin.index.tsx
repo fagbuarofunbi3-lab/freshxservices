@@ -30,26 +30,28 @@ function Overview() {
   const selected = monthly?.months[selectedMonth];
 
   const yearTotals = useMemo(() => {
-    if (!monthly) return { revenue: 0, orders: 0, laundry: 0, cleaning: 0, topups: 0 };
+    if (!monthly) return { revenue: 0, orders: 0, laundry: 0, cleaning: 0, pest_control: 0, topups: 0 };
     return monthly.months.reduce(
       (a, m) => ({
         revenue: a.revenue + m.revenue,
         orders: a.orders + m.orders,
         laundry: a.laundry + m.laundry,
         cleaning: a.cleaning + m.cleaning,
+        pest_control: a.pest_control + (m.pest_control ?? 0),
         topups: a.topups + m.topups,
       }),
-      { revenue: 0, orders: 0, laundry: 0, cleaning: 0, topups: 0 },
+      { revenue: 0, orders: 0, laundry: 0, cleaning: 0, pest_control: 0, topups: 0 },
     );
   }, [monthly]);
 
   return (
     <div className="space-y-6">
       {/* At-a-glance totals (30d) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard label="Revenue (30d)" value={naira(totals?.total_revenue_30d ?? 0)} />
-        <StatCard label="Orders (30d)" value={String(totals?.order_count_30d ?? 0)} />
-        <StatCard label="Active orders" value={String(totals?.active_orders ?? 0)} />
+        <StatCard label="Laundry (30d)" value={naira(totals?.laundry_revenue ?? 0)} />
+        <StatCard label="Cleaning (30d)" value={naira(totals?.cleaning_revenue ?? 0)} />
+        <StatCard label="Pest Control (30d)" value={naira(totals?.pest_control_revenue ?? 0)} />
         <StatCard label="Total customers" value={String(totals?.customers_total ?? 0)} />
       </div>
 
@@ -121,10 +123,11 @@ function Overview() {
             {MONTH_NAMES[selectedMonth]} {year}
           </div>
           <div className="mt-1 font-display text-2xl">{naira(selected.revenue)} revenue</div>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
             <StatCard label="Orders" value={String(selected.orders)} />
             <StatCard label="Laundry" value={naira(selected.laundry)} />
             <StatCard label="Cleaning" value={naira(selected.cleaning)} />
+            <StatCard label="Pest Control" value={naira(selected.pest_control ?? 0)} />
             <StatCard label="Wallet top-ups" value={naira(selected.topups)} />
           </div>
         </section>

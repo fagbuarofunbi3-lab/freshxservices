@@ -84,6 +84,51 @@ export const logOut = createFn({ method: "POST" }).handler(async () => {
   return { ok: true };
 });
 
+export type UserRole = "customer" | "admin" | "operations" | "finance" | "support";
+
+export function isAdminRole(role?: string): boolean {
+  return role === "admin" || role === "operations" || role === "finance" || role === "support";
+}
+
+export function canManageAdmins(role?: string): boolean {
+  return role === "admin";
+}
+
+export function canManageSettings(role?: string): boolean {
+  return role === "admin";
+}
+
+export function canManageFinances(role?: string): boolean {
+  return role === "admin" || role === "finance";
+}
+
+export function canManageOrders(role?: string): boolean {
+  return role === "admin" || role === "operations" || role === "support";
+}
+
+export function canManageServices(role?: string): boolean {
+  return role === "admin" || role === "operations";
+}
+
+export function canManageProfessionals(role?: string): boolean {
+  return role === "admin" || role === "operations";
+}
+
+export function getRoleBadge(role?: string): { label: string; color: string } {
+  switch (role) {
+    case "admin":
+      return { label: "Super Admin", color: "bg-red-500/15 text-red-500 border-red-500/30" };
+    case "operations":
+      return { label: "Operations Admin", color: "bg-blue-500/15 text-blue-500 border-blue-500/30" };
+    case "finance":
+      return { label: "Finance Admin", color: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" };
+    case "support":
+      return { label: "Support Admin", color: "bg-amber-500/15 text-amber-500 border-amber-500/30" };
+    default:
+      return { label: "Customer", color: "bg-muted text-muted-foreground border-border" };
+  }
+}
+
 export const getMe = createFn({ method: "GET" }).handler(async () => {
   const token = getAuthToken();
   if (!token) return null;
@@ -96,7 +141,7 @@ export const getMe = createFn({ method: "GET" }).handler(async () => {
       whatsapp_number: user.whatsapp_number as string,
       email: (user.email ?? null) as string | null,
       wallet_balance: Number(user.wallet_balance ?? 0),
-      role: user.role as "customer" | "admin",
+      role: (user.role ?? "customer") as UserRole,
       language_preference: (user.language_preference ?? "en") as "en" | "pidgin",
       has_transaction_pin: !!user.has_transaction_pin,
       referral_code: (user.referral_code ?? "") as string,
@@ -318,3 +363,31 @@ export const resetTransactionPinWithToken = createFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+export const googleAuth = createFn({ method: "POST" })
+  .validator((input) =>
+    z
+      .object({
+        id_token: z.string().min(1),
+        whatsapp_number: z.string().optional(),
+        referral_code: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const res = await apiClient.post<{
+      user?: any;
+      token?: string;
+      needs_phone: boolean;
+      is_new: boolean;
+      email?: string;
+      full_name?: string;
+    }>("/api/auth/google", data, { skipAuth: true });
+
+    if (res.token && res.user) {
+      saveAuthSession(res.user, res.token);
+    }
+    return res;
+  });
+
+

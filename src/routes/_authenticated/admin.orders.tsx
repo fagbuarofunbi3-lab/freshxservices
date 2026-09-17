@@ -433,7 +433,7 @@ function AdminOrders() {
                     <div className="text-xs text-muted-foreground">{o.customer_whatsapp}</div>
                   </td>
                   <td className="px-4 py-3 capitalize">
-                    {o.service_type} · {o.item_count} item{o.item_count === 1 ? "" : "s"}
+                    {o.service_type.replace("_", " ")} · {o.item_count} item{o.item_count === 1 ? "" : "s"}
                     <div className="text-xs text-muted-foreground">{o.delivery_method}</div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{naira(o.total_amount)}</td>
@@ -473,7 +473,7 @@ function AdminOrders() {
                   FX-{selectedOrder.id.slice(0, 8).toUpperCase()}
                 </p>
                 <h2 className="mt-1 font-display text-xl capitalize">
-                  {selectedOrder.service_type} order
+                  {selectedOrder.service_type.replace("_", " ")} order
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {new Date(selectedOrder.created_at).toLocaleString()}

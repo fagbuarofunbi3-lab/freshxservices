@@ -3,7 +3,7 @@ import { useServerFn } from "@/lib/create-fn";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { resetTransactionPinWithToken, resetTransactionPinWithVerifiedEmail } from "@/lib/auth.functions";
-import { AuthShell, Field } from "./signup";
+import { AuthShell, Field } from "@/components/AuthShell";
 
 export const Route = createFileRoute("/reset-pin")({
   validateSearch: (search: Record<string, unknown>) => ({

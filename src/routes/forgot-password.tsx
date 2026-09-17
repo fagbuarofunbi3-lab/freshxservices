@@ -3,7 +3,7 @@ import { useServerFn } from "@/lib/create-fn";
 import { useState } from "react";
 import { toast } from "sonner";
 import { requestPasswordResetEmail } from "@/lib/auth.functions";
-import { AuthShell, Field } from "./signup";
+import { AuthShell, Field } from "@/components/AuthShell";
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,

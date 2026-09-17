@@ -4,7 +4,7 @@ import { useServerFn } from "@/lib/create-fn";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Sparkles, ShieldCheck, Minus, Plus, MessageCircle, Info } from "lucide-react";
+import { Shirt, SprayCan, Bug, Minus, Plus, MessageCircle, Info } from "lucide-react";
 import { applyPromo, createOrder, listServiceItems, notifyCleaningRequest } from "@/lib/orders.functions";
 import { useMe, useInvalidateMe } from "../__root";
 import { naira } from "@/lib/format";
@@ -25,12 +25,38 @@ const CLEANING_SPACES = [
   { id: "cleaning_other", label: "Other", sub: "Shop, school, custom" },
 ] as const;
 
+const PEST_CONTROL_SPACES = [
+  { id: "pest_control_residential", label: "Residential", sub: "Hostel room, flat, duplex fumigation" },
+  { id: "pest_control_commercial", label: "Commercial", sub: "Office, restaurant, store, warehouse" },
+  { id: "pest_control", label: "Specialist Treatment", sub: "Bedbug extermination, rodents, termites" },
+] as const;
+
 const RECURRING_OPTIONS = [
   { id: "one_off", label: "One-off" },
   { id: "weekly", label: "Weekly" },
   { id: "biweekly", label: "Bi-weekly" },
   { id: "monthly", label: "Monthly" },
 ] as const;
+
+const DEFAULT_PEST_CONTROL_ITEMS: Record<string, Array<{ id: string; name: string; price: number; category: string }>> = {
+  pest_control_residential: [
+    { id: "pc-self-con", name: "Self-Contained / Single Room Fumigation", price: 15000, category: "pest_control_residential" },
+    { id: "pc-hostel-bed", name: "Hostel Bed Space & Room Treatment", price: 12000, category: "pest_control_residential" },
+    { id: "pc-2bed-flat", name: "2-Bedroom Flat General Fumigation", price: 25000, category: "pest_control_residential" },
+    { id: "pc-3bed-flat", name: "3-Bedroom Flat / Duplex Treatment", price: 35000, category: "pest_control_residential" },
+  ],
+  pest_control_commercial: [
+    { id: "pc-office-sm", name: "Small Office Space (< 50 sqm)", price: 30000, category: "pest_control_commercial" },
+    { id: "pc-restaurant", name: "Restaurant / Kitchen Fumigation", price: 45000, category: "pest_control_commercial" },
+    { id: "pc-warehouse", name: "Store / Warehouse Inspection & Spray", price: 60000, category: "pest_control_commercial" },
+  ],
+  pest_control: [
+    { id: "pc-bedbugs", name: "Intensive Bedbug Heat/Chemical Treatment", price: 20000, category: "pest_control" },
+    { id: "pc-rodents", name: "Rodent & Rat Extermination / Trapping", price: 18000, category: "pest_control" },
+    { id: "pc-termites", name: "Termite Barrier Treatment", price: 40000, category: "pest_control" },
+    { id: "pc-cockroaches", name: "Cockroach & Crawling Insect Eradication", price: 15000, category: "pest_control" },
+  ],
+};
 
 function NewOrderPage() {
   const { data: me } = useMe();
@@ -45,11 +71,13 @@ function NewOrderPage() {
     queryFn: () => listServiceItems(),
   });
 
-  const [service, setService] = useState<"laundry" | "cleaning" | null>(null);
+  const [service, setService] = useState<"laundry" | "cleaning" | "pest_control" | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
   const [tab, setTab] = useState<(typeof LAUNDRY_TABS)[number]["id"]>("laundry_soft");
   const [cleaningSpace, setCleaningSpace] =
     useState<(typeof CLEANING_SPACES)[number]["id"] | null>(null);
+  const [pestSpace, setPestSpace] =
+    useState<(typeof PEST_CONTROL_SPACES)[number]["id"] | null>(null);
   const [recurring, setRecurring] =
     useState<(typeof RECURRING_OPTIONS)[number]["id"]>("one_off");
   const [preferredDate, setPreferredDate] = useState("");
@@ -64,28 +92,37 @@ function NewOrderPage() {
   const [pin, setPin] = useState("");
   const [itemSearch, setItemSearch] = useState("");
 
-
-
   const deliveryItem = items.find((i) => i.category === "delivery");
   const deliveryFee = delivery === "pickup" ? (deliveryItem?.price ?? 1000) : 0;
 
+  const allItems = useMemo(() => {
+    const fallbacks = Object.values(DEFAULT_PEST_CONTROL_ITEMS).flat();
+    const existingIds = new Set(items.map((i) => i.id));
+    return [...items, ...fallbacks.filter((f) => !existingIds.has(f.id))];
+  }, [items]);
+
   const visibleItems = useMemo(() => {
-    let base: typeof items = [];
-    if (service === "laundry") base = items.filter((i) => i.category === tab);
-    else if (service === "cleaning" && cleaningSpace)
+    let base: typeof allItems = [];
+    if (service === "laundry") {
+      base = items.filter((i) => i.category === tab);
+    } else if (service === "cleaning" && cleaningSpace) {
       base = items.filter((i) => i.category === cleaningSpace);
+    } else if (service === "pest_control" && pestSpace) {
+      const dbItems = items.filter((i) => i.category === pestSpace);
+      base = dbItems.length > 0 ? dbItems : (DEFAULT_PEST_CONTROL_ITEMS[pestSpace] || []);
+    }
     const q = itemSearch.trim().toLowerCase();
     if (!q) return base;
     return base.filter((i) => i.name.toLowerCase().includes(q));
-  }, [items, service, tab, cleaningSpace, itemSearch]);
+  }, [items, allItems, service, tab, cleaningSpace, pestSpace, itemSearch]);
 
   const subtotal = useMemo(
     () =>
       Object.entries(qty).reduce((s, [id, n]) => {
-        const it = items.find((i) => i.id === id);
+        const it = allItems.find((i) => i.id === id);
         return s + (it ? it.price * n : 0);
       }, 0),
-    [qty, items],
+    [qty, allItems],
   );
 
   const discount = appliedPromo?.discount ?? 0;
@@ -119,24 +156,26 @@ function NewOrderPage() {
     const selected = Object.entries(qty)
       .filter(([, n]) => n > 0)
       .map(([id, n]) => {
-        const it = items.find((i) => i.id === id)!;
+        const it = allItems.find((i) => i.id === id)!;
         return { service_item_id: id, name: it.name, unit_price: it.price, quantity: n };
       });
     if (selected.length === 0) return toast.error("Add at least one item");
 
-    // CLEANING → WhatsApp handoff, no wallet charge
-    if (service === "cleaning") {
+    // CLEANING & PEST CONTROL → WhatsApp handoff with admin dispatch
+    if (service === "cleaning" || service === "pest_control") {
+      const isPest = service === "pest_control";
       const lines: string[] = [];
       lines.push(`Hello, my name is ${me?.full_name ?? "a FreshX customer"}.`);
-      lines.push(`I'd like to book a cleaning service.`);
+      lines.push(`I'd like to book a ${isPest ? "pest control & fumigation" : "cleaning"} service.`);
       lines.push(``);
-      lines.push(`Items I want cleaned:`);
+      lines.push(`Items / areas:`);
       selected.forEach((s) => {
         lines.push(`• ${s.name} × ${s.quantity} — ₦${(s.unit_price * s.quantity).toLocaleString()}`);
       });
       lines.push(``);
       lines.push(`Estimated total (from website): ₦${subtotal.toLocaleString()}`);
-      if (cleaningSpace) lines.push(`Space type: ${cleaningSpace.replace("cleaning_", "")}`);
+      if (isPest && pestSpace) lines.push(`Treatment type: ${pestSpace.replace("pest_control_", "").replace("_", " ")}`);
+      if (!isPest && cleaningSpace) lines.push(`Space type: ${cleaningSpace.replace("cleaning_", "")}`);
       if (recurring) lines.push(`Frequency: ${recurring}`);
       if (preferredDate) lines.push(`Preferred date: ${preferredDate}`);
       if (preferredTime) lines.push(`Preferred time: ${preferredTime}`);
@@ -149,13 +188,14 @@ function NewOrderPage() {
       // Fire-and-forget owner email; never block the WhatsApp handoff
       notifyCleaning({
         data: {
+          service_type: isPest ? "pest_control" : "cleaning",
           items: selected.map((s) => ({
             name: s.name,
             quantity: s.quantity,
             line_total: s.unit_price * s.quantity,
           })),
           subtotal,
-          space_type: cleaningSpace ?? undefined,
+          space_type: isPest ? (pestSpace ?? undefined) : (cleaningSpace ?? undefined),
           recurring,
           preferred_date: preferredDate || undefined,
           preferred_time: preferredTime || undefined,
@@ -207,18 +247,33 @@ function NewOrderPage() {
     return (
       <div className="max-w-3xl">
         <h1 className="font-display text-2xl">What do you need?</h1>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
           <ServicePick
-            icon={<Sparkles className="h-6 w-6 text-primary" />}
+            icon={<Shirt className="h-6 w-6 text-primary" />}
             title="Laundry"
-            sub="Wash & fold your clothes"
-            onClick={() => setService("laundry")}
+            sub="Wash, dry & fold clothes"
+            onClick={() => {
+              setService("laundry");
+              setQty({});
+            }}
           />
           <ServicePick
-            icon={<ShieldCheck className="h-6 w-6 text-primary" />}
+            icon={<SprayCan className="h-6 w-6 text-primary" />}
             title="Cleaning"
-            sub="Deep clean your space"
-            onClick={() => setService("cleaning")}
+            sub="Deep clean your home or office"
+            onClick={() => {
+              setService("cleaning");
+              setQty({});
+            }}
+          />
+          <ServicePick
+            icon={<Bug className="h-6 w-6 text-primary" />}
+            title="Pest Control"
+            sub="Fumigation & pest eradication"
+            onClick={() => {
+              setService("pest_control");
+              setQty({});
+            }}
           />
         </div>
 
@@ -254,15 +309,26 @@ function NewOrderPage() {
     );
   }
 
-
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl">
-            {service === "laundry" ? "Build your laundry order" : "Choose your cleaning"}
+            {service === "laundry"
+              ? "Build your laundry order"
+              : service === "pest_control"
+                ? "Choose your pest control service"
+                : "Choose your cleaning"}
           </h1>
-          <button onClick={() => setService(null)} className="text-sm text-muted-foreground hover:underline">
+          <button
+            onClick={() => {
+              setService(null);
+              setCleaningSpace(null);
+              setPestSpace(null);
+              setQty({});
+            }}
+            className="text-sm text-muted-foreground hover:underline"
+          >
             Change service
           </button>
         </div>
@@ -305,13 +371,35 @@ function NewOrderPage() {
           </div>
         )}
 
-        {(service === "laundry" || cleaningSpace) && (
+        {service === "pest_control" && (
+          <div className="grid gap-2 md:grid-cols-3">
+            {PEST_CONTROL_SPACES.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setPestSpace(s.id);
+                  setQty({});
+                }}
+                className={`rounded-xl border p-4 text-left transition ${
+                  pestSpace === s.id
+                    ? "border-primary bg-primary-soft"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <div className="text-sm font-medium">{s.label}</div>
+                <div className="text-xs text-muted-foreground">{s.sub}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(service === "laundry" || (service === "cleaning" && cleaningSpace) || (service === "pest_control" && pestSpace)) && (
           <motion.div layout className="rounded-2xl border border-border bg-card">
             <div className="border-b border-border p-3">
               <input
                 value={itemSearch}
                 onChange={(e) => setItemSearch(e.target.value)}
-                placeholder={`Search ${service === "laundry" ? "laundry" : "cleaning"} items…`}
+                placeholder={`Search ${service === "laundry" ? "laundry" : service === "pest_control" ? "pest control" : "cleaning"} items…`}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
             </div>
@@ -352,9 +440,9 @@ function NewOrderPage() {
           </motion.div>
         )}
 
-        {service === "cleaning" && cleaningSpace && (
+        {((service === "cleaning" && cleaningSpace) || (service === "pest_control" && pestSpace)) && (
           <div className="rounded-2xl border border-border bg-card p-5">
-            <div className="font-medium">Schedule</div>
+            <div className="font-medium">Schedule & Details</div>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               <label className="block text-sm">
                 <span className="text-xs text-muted-foreground">Preferred date</span>
@@ -396,13 +484,13 @@ function NewOrderPage() {
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Cleaning address"
+              placeholder={service === "pest_control" ? "Fumigation address / location" : "Cleaning address"}
               className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Special instructions (optional)"
+              placeholder="Special instructions or notes (e.g. types of pests seen, room count)"
               className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               rows={2}
             />
@@ -468,7 +556,7 @@ function NewOrderPage() {
             {service === "laundry" && <Row label="Delivery" value={naira(deliveryFee)} />}
             {discount > 0 && <Row label={`Promo (${appliedPromo?.code})`} value={`−${naira(discount)}`} />}
             <div className="border-t border-border pt-2">
-              <Row label={service === "cleaning" ? "Estimated total" : "Total"} value={naira(total)} bold />
+              <Row label={service === "laundry" ? "Total" : "Estimated total"} value={naira(total)} bold />
             </div>
           </dl>
 
@@ -530,7 +618,7 @@ function NewOrderPage() {
             </>
           )}
 
-          {service === "cleaning" && (
+          {(service === "cleaning" || service === "pest_control") && (
             <>
               <label className="mt-4 block">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -549,7 +637,7 @@ function NewOrderPage() {
               <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>
-                  Final price may differ based on your location, room size, or other factors.
+                  Final price may differ based on your location, room size, or infestation severity.
                   Our admin will confirm the exact amount with you on WhatsApp.
                 </span>
               </div>

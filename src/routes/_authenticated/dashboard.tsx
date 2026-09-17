@@ -35,12 +35,18 @@ function DashboardPage() {
     queryKey: ["site-media"],
     queryFn: () => getMedia({}),
   });
+  const isKnownPro = typeof window !== "undefined" && localStorage.getItem("freshx.is_pro") === "true";
   const { data: myPro } = useQuery({
     queryKey: ["my-professional"],
     queryFn: () => getMyProfessional(),
+    enabled: isKnownPro,
+    retry: false,
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
   const active = orders?.find((o) => o.status !== "delivered" && o.status !== "cancelled");
   const recent = orders?.slice(0, 3) ?? [];
+  const hasOrderHistory = (orders && orders.length > 0);
   const balance = me?.wallet_balance ?? 0;
   const lowBalance = balance < 500;
   const [showBalance, setShowBalance] = useState(true);
@@ -170,8 +176,13 @@ function DashboardPage() {
         {active ? (
           <div className="mt-4">
             <div className="text-sm text-muted-foreground">
-              FX-{active.id.slice(0, 8).toUpperCase()} · {active.service_type === "laundry" ? "Laundry" : "Cleaning"} ·{" "}
-              {new Date(active.created_at).toLocaleDateString()}
+              FX-{active.id.slice(0, 8).toUpperCase()} ·{" "}
+              {active.service_type === "pest_control"
+                ? "Pest Control"
+                : active.service_type === "cleaning"
+                  ? "Cleaning"
+                  : "Laundry"}{" "}
+              · {new Date(active.created_at).toLocaleDateString()}
             </div>
             <div className="mt-5 grid grid-cols-4 gap-2">
               {STATUSES.map((s) => {
@@ -213,9 +224,19 @@ function DashboardPage() {
               </Link>
             </div>
           </div>
+        ) : hasOrderHistory ? (
+          <div className="mt-4 flex flex-col items-center gap-3 py-8 text-center">
+            <div className="text-muted-foreground">No active orders in progress.</div>
+            <Link
+              to="/order/new"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Place a new order <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         ) : (
           <div className="mt-4 flex flex-col items-center gap-3 py-8 text-center">
-            <div className="text-muted-foreground">No active orders yet.</div>
+            <div className="text-muted-foreground">No orders placed yet.</div>
             <Link
               to="/order/new"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -271,8 +292,12 @@ function DashboardPage() {
                 >
                   <div>
                     <div className="text-sm font-medium">
-                      {o.service_type === "laundry" ? "Laundry" : "Cleaning"} · FX-
-                      {o.id.slice(0, 8).toUpperCase()}
+                      {o.service_type === "pest_control"
+                        ? "Pest Control"
+                        : o.service_type === "cleaning"
+                          ? "Cleaning"
+                          : "Laundry"}{" "}
+                      · FX-{o.id.slice(0, 8).toUpperCase()}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {new Date(o.created_at).toLocaleString()} · {naira(o.total_amount)}

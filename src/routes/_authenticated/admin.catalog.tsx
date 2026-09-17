@@ -17,6 +17,9 @@ const CATEGORY_OPTIONS = [
   { value: "cleaning_apartment", label: "Cleaning · Apartment" },
   { value: "cleaning_office", label: "Cleaning · Office" },
   { value: "cleaning_other", label: "Cleaning · Other" },
+  { value: "pest_control_residential", label: "Pest Control · Residential" },
+  { value: "pest_control_commercial", label: "Pest Control · Commercial" },
+  { value: "pest_control", label: "Pest Control · Specialist Treatment" },
   { value: "delivery", label: "Delivery fee" },
 ] as const;
 

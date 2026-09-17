@@ -20,7 +20,7 @@ const OrderItemSchema = z.object({
 });
 
 const CreateOrderSchema = z.object({
-  service_type: z.enum(["laundry", "cleaning"]),
+  service_type: z.enum(["laundry", "cleaning", "pest_control"]),
   items: z.array(OrderItemSchema).min(1).max(60),
   delivery_method: z.enum(["dropoff", "pickup"]),
   address: z.string().trim().max(300).optional(),
@@ -97,6 +97,7 @@ export const notifyCleaningRequest = createFn({ method: "POST" })
           )
           .min(1)
           .max(60),
+        service_type: z.enum(["cleaning", "pest_control"]).optional(),
         subtotal: z.number().nonnegative(),
         space_type: z.string().trim().max(80).optional(),
         recurring: z.string().trim().max(40).optional(),
@@ -149,7 +150,7 @@ export type OrderItemsJson = {
 function serializeOrder(o: Record<string, unknown>) {
   return {
     id: (o.id || o._id) as string,
-    service_type: (o.service_type || "laundry") as "laundry" | "cleaning",
+    service_type: (o.service_type || "laundry") as "laundry" | "cleaning" | "pest_control",
     items_json: (o.items_json ?? { items: [] }) as OrderItemsJson,
     subtotal: Number(o.subtotal ?? 0),
     delivery_fee: Number(o.delivery_fee ?? 0),

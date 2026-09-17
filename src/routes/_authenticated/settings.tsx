@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { setTransactionPin, updateProfile, requestTransactionPinReset } from "@/lib/auth.functions";
 import { useMe, useInvalidateMe } from "../__root";
-import { PasswordInput } from "../signup";
+import { PasswordInput } from "@/components/AuthShell";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 

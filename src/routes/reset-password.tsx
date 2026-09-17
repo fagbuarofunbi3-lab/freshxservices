@@ -3,7 +3,7 @@ import { useServerFn } from "@/lib/create-fn";
 import { useState } from "react";
 import { toast } from "sonner";
 import { resetPasswordWithOTP } from "@/lib/auth.functions";
-import { AuthShell, Field, PasswordInput } from "./signup";
+import { AuthShell, Field, PasswordInput } from "@/components/AuthShell";
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (search: Record<string, unknown>): { email?: string; otp?: string; code?: string; token?: string } => ({

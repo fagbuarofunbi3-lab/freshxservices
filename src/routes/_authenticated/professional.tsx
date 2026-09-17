@@ -38,7 +38,18 @@ function ProfessionalDashboard() {
   const qc = useQueryClient();
   const { data: pro, isLoading } = useQuery({
     queryKey: ["my-professional"],
-    queryFn: () => getMyProfessional(),
+    queryFn: async () => {
+      const res = await getMyProfessional();
+      try {
+        if (res) {
+          localStorage.setItem("freshx.is_pro", "true");
+        } else {
+          localStorage.removeItem("freshx.is_pro");
+        }
+      } catch {}
+      return res;
+    },
+    retry: false,
   });
 
   const [businessName, setBusinessName] = useState("");

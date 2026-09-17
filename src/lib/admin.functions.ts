@@ -9,6 +9,9 @@ const ServiceItemCategorySchema = z.enum([
   "cleaning_apartment",
   "cleaning_office",
   "cleaning_other",
+  "pest_control",
+  "pest_control_residential",
+  "pest_control_commercial",
   "delivery",
 ]);
 
@@ -254,6 +257,7 @@ export const adminReports = createFn({ method: "GET" }).handler(async () => {
     customers_total: totalCustomers,
     laundry_revenue: Number(reports.laundry_revenue ?? 0),
     cleaning_revenue: Number(reports.cleaning_revenue ?? 0),
+    pest_control_revenue: Number(reports.pest_control_revenue ?? reports.pest_control_revenue_30d ?? 0),
     total_delivery_fees: Number(reports.total_delivery_fees ?? 0),
     daily_revenue: (reports.daily_revenue ?? []).map((d: any) => ({
       date: d.date as string,
@@ -274,6 +278,7 @@ export const adminMonthlyReports = createFn({ method: "GET" })
         revenue: number;
         laundry: number;
         cleaning: number;
+        pest_control?: number;
         orders: number;
         topups: number;
       }>;
@@ -383,16 +388,18 @@ export const adminSearchUsers = createFn({ method: "GET" })
   });
 
 export const adminSetUserRole = createFn({ method: "POST" })
-  .inputValidator((input) =>
+  .inputValidator((input: any) =>
     z
       .object({
-        user_id: z.string().min(1),
-        role: z.enum(["customer", "admin"]),
+        user_id: z.string().optional(),
+        profile_id: z.string().optional(),
+        role: z.enum(["customer", "admin", "operations", "finance", "support"]),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    await apiClient.post(`/api/admin/users/${data.user_id}/role`, {
+    const id = data.user_id || data.profile_id;
+    await apiClient.post(`/api/admin/users/${id}/role`, {
       role: data.role,
     });
     return { ok: true };
